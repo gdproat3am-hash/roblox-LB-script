@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
 
 -- Remove previous GUI
 for _, gui in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
@@ -36,7 +37,7 @@ local title = Instance.new("TextLabel", modal)
 title.Size = UDim2.new(1,-24,0,30)
 title.Position = UDim2.new(0,12,0,12)
 title.BackgroundTransparency = 1
-title.Text = "Key system blah blah i need members fag"
+title.Text = "Enter Access Key"
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(240,240,240)
@@ -46,7 +47,7 @@ local desc = Instance.new("TextLabel", modal)
 desc.Size = UDim2.new(1,-24,0,44)
 desc.Position = UDim2.new(0,12,0,44)
 desc.BackgroundTransparency = 1
-desc.Text = "copy the damn discord link below faggot"
+desc.Text = "Paste the key from Discord to unlock the GUI."
 desc.Font = Enum.Font.Gotham
 desc.TextSize = 14
 desc.TextColor3 = Color3.fromRGB(200,200,200)
@@ -54,7 +55,6 @@ desc.TextWrapped = true
 
 -- Input box
 local inputBox = Instance.new("TextBox", modal)
-inputBox.Text = ("Enter the fucking key here faggot")
 inputBox.Size = UDim2.new(1,-120,0,32)
 inputBox.Position = UDim2.new(0,12,0,100)
 inputBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
@@ -68,7 +68,7 @@ submit.Size = UDim2.new(0,88,0,32)
 submit.Position = UDim2.new(1,-100,0,100)
 submit.BackgroundColor3 = Color3.fromRGB(70,130,240)
 submit.TextColor3 = Color3.fromRGB(255,255,255)
-submit.Text = "Submit faggot"
+submit.Text = "Submit"
 Instance.new("UICorner", submit)
 
 -- Copy Discord button
@@ -77,7 +77,7 @@ copyBtn.Size = UDim2.new(0,120,0,28)
 copyBtn.Position = UDim2.new(0.5,-60,1,-36)
 copyBtn.BackgroundColor3 = Color3.fromRGB(100,150,255)
 copyBtn.TextColor3 = Color3.fromRGB(255,255,255)
-copyBtn.Text = "Copy Discord Link for key"
+copyBtn.Text = "Copy Discord Link"
 Instance.new("UICorner", copyBtn)
 
 -- Feedback
@@ -94,11 +94,15 @@ feedback.TextColor3 = Color3.fromRGB(255,180,180)
 local ALLOWED_KEYS = {"GDIRSWC"}
 
 -- Tween helper
-local function tween(inst, props, time)
-    local t = TweenService:Create(inst, TweenInfo.new(time or 0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
+local function tween(inst, props, time, style, dir)
+    local ti = TweenInfo.new(time or 0.25, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out)
+    local t = TweenService:Create(inst, ti, props)
     t:Play()
     return t
 end
+
+-- store connections for cleanup
+local connections = {}
 
 -- Unlock function
 local function unlock()
@@ -111,6 +115,7 @@ local function unlock()
 
     -- Main window
     local window = Instance.new("Frame", screenGui)
+    window.Name = "MainWindow"
     window.Size = UDim2.new(0,600,0,400)
     window.Position = UDim2.new(0.5,0,0.5,0)
     window.AnchorPoint = Vector2.new(0.5,0.5)
@@ -127,7 +132,7 @@ local function unlock()
     headerTitle.Size = UDim2.new(1,-16,1,0)
     headerTitle.Position = UDim2.new(0,8,0,0)
     headerTitle.BackgroundTransparency = 1
-    headerTitle.Text = "LB battle grounds script omg kaboom fr"
+    headerTitle.Text = "Lucky Blocks Utility"
     headerTitle.Font = Enum.Font.GothamBold
     headerTitle.TextSize = 18
     headerTitle.TextColor3 = Color3.fromRGB(240,240,240)
@@ -169,63 +174,160 @@ local function unlock()
         btn.MouseButton1Click:Connect(function()
             for _,s in pairs(screens) do s.Visible=false end
             scr.Visible = true
+            -- if teleport tab opened, refresh players immediately
+            if name == "Teleport" and refreshTeleportPlayers then
+                refreshTeleportPlayers()
+            end
+            if name == "Teleport-etc" and refreshTeleportEtc then
+                refreshTeleportEtc()
+            end
         end)
     end
 
     makeTab("Spawner",1)
     makeTab("Player",2)
     makeTab("Teleport",3)
-    makeTab("Teleport-etc (not done)",4)
+    makeTab("Teleport-etc",4)
 
     screens["Spawner"].Visible = true
 
-    -- Drag
-    local dragging = false
-    local dragInput, dragStart, startPos
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = window.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+    -- Smooth tweened Drag
+local dragging = false
+local dragStart = Vector2.new()
+local startPos = UDim2.new()
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = window.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        local dragInput = input
+        dragInput.Changed:Connect(function()
+            if dragging then
+                local delta = dragInput.Position - dragStart
+                window.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+            end
+        end)
+    end
+end)
+
+
+    -- On mouse movement, tween the window to a target position near cursor (smoothed)
+    local function tweenToPosition(targetPos)
+        -- create UDim2 from target offset (center window at mouse)
+        local targetUDim = UDim2.new(0, targetPos.X - window.AbsoluteSize.X/2, 0, targetPos.Y - window.AbsoluteSize.Y/2)
+        -- stop previous tween by pausing it (safe) if exists
+        if currentTween and currentTween.PlaybackState == Enum.PlaybackState.Playing then
+            pcall(function() currentTween:Cancel() end) -- :Cancel might not exist on all builds, pcall to be safe
         end
-    end)
-    header.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
+        currentTween = tween(window, {Position = targetUDim}, 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    end
+
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            -- use input.Position which is screen coordinates
+            local mousePos = input.Position
+            tweenToPosition(Vector2.new(mousePos.X, mousePos.Y))
         end
     end)
 
     -- --- SPAWNER TAB ---
     local spawnerTab = screens["Spawner"]
     local blockRemotes = {"SpawnDiamondBlock","SpawnGalaxyBlock","SpawnLuckyBlock","SpawnRainbowBlock","SpawnSuperBlock"}
+
+    -- Info label for loop spawn
+    local infoLabel = Instance.new("TextLabel", spawnerTab)
+    infoLabel.Size = UDim2.new(1,-20,0,28)
+    infoLabel.Position = UDim2.new(0,10,0,10)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.Text = "Lucky Block spawner. Use 'Loop Lucky (10s)' to spawn repeatedly for 10s."
+    infoLabel.TextWrapped = true
+    infoLabel.Font = Enum.Font.Gotham
+    infoLabel.TextSize = 12
+    infoLabel.TextColor3 = Color3.fromRGB(200,200,200)
+
     for i, remoteName in ipairs(blockRemotes) do
         local spawnBtn = Instance.new("TextButton", spawnerTab)
         spawnBtn.Size = UDim2.new(0,160,0,32)
-        spawnBtn.Position = UDim2.new(0,10,0,10 + (i-1)*42)
+        spawnBtn.Position = UDim2.new(0,10,0,40 + (i-1)*42)
         spawnBtn.BackgroundColor3 = Color3.fromRGB(70,130,240)
         spawnBtn.TextColor3 = Color3.fromRGB(255,255,255)
         spawnBtn.Text = remoteName:gsub("Spawn","")
         Instance.new("UICorner", spawnBtn)
+
+        local debounce = false
         spawnBtn.MouseButton1Click:Connect(function()
+            if debounce then return end
+            debounce = true
+            local originalText = spawnBtn.Text
+            spawnBtn.Text = "Spawning..."
             local remote = ReplicatedStorage:FindFirstChild(remoteName)
-            if remote and remote:IsA("RemoteEvent") then
-                remote:FireServer()
-            elseif remote and remote:IsA("RemoteFunction") then
-                remote:InvokeServer()
+            if remote then
+                if remote:IsA("RemoteEvent") then
+                    pcall(function() remote:FireServer() end)
+                elseif remote:IsA("RemoteFunction") then
+                    pcall(function() remote:InvokeServer() end)
+                end
+            else
+                spawnBtn.Text = "Remote not found"
+                wait(1)
             end
+            spawnBtn.Text = originalText
+            wait(0.5)
+            debounce = false
         end)
     end
+
+    -- Loop spawn Lucky Blocks for 10s button (fires SpawnLuckyBlock repeatedly)
+    local loopBtn = Instance.new("TextButton", spawnerTab)
+    loopBtn.Size = UDim2.new(0,200,0,32)
+    loopBtn.Position = UDim2.new(0,10,0,40 + (#blockRemotes)*42)
+    loopBtn.BackgroundColor3 = Color3.fromRGB(180,90,220)
+    loopBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    loopBtn.Text = "Loop Lucky (10s)"
+    Instance.new("UICorner", loopBtn)
+
+    local looping = false
+    loopBtn.MouseButton1Click:Connect(function()
+        if looping then return end
+        looping = true
+        local originalText = loopBtn.Text
+        loopBtn.Text = "Looping..."
+        local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
+        if not remote then
+            loopBtn.Text = "Remote missing"
+            wait(1.2)
+            loopBtn.Text = originalText
+            looping = false
+            return
+        end
+
+        local stopTime = tick() + 10 -- 10 seconds from now
+        while tick() < stopTime do
+            -- call remote for yourself
+            if remote:IsA("RemoteEvent") then
+                pcall(function() remote:FireServer() end)
+            elseif remote:IsA("RemoteFunction") then
+                pcall(function() remote:InvokeServer() end)
+            end
+            wait() -- approx spawn every 0.45s (adjustable)
+        end
+
+        loopBtn.Text = "Done (10s)"
+        wait(0.9)
+        loopBtn.Text = originalText
+        looping = false
+    end)
 
     -- --- PLAYER TAB ---
     local playerTab = screens["Player"]
@@ -245,11 +347,10 @@ local function unlock()
         label.TextColor3 = Color3.fromRGB(220,220,220)
         label.TextXAlignment = Enum.TextXAlignment.Left
 
-        local slider = Instance.new("TextButton", container)
+        local slider = Instance.new("Frame", container)
         slider.Size = UDim2.new(1,0,0,20)
         slider.Position = UDim2.new(0,0,0,25)
         slider.BackgroundColor3 = Color3.fromRGB(70,70,70)
-        slider.Text = ""
         Instance.new("UICorner", slider)
 
         local fill = Instance.new("Frame", slider)
@@ -257,49 +358,70 @@ local function unlock()
         fill.BackgroundColor3 = Color3.fromRGB(70,130,240)
         Instance.new("UICorner", fill)
 
-        local dragging = false
-        local mouse = game.Players.LocalPlayer:GetMouse()
-        slider.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging=true end
-        end)
-        slider.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
-        end)
-        mouse.Move:Connect(function()
-            if dragging then
-                local relativeX = math.clamp(mouse.X - slider.AbsolutePosition.X,0,slider.AbsoluteSize.X)
-                local value = math.floor((relativeX/slider.AbsoluteSize.X)*(max-min)+min)
-                fill.Size = UDim2.new((value-min)/(max-min),0,1,0)
-                label.Text = labelText.." ("..value..")"
-                pcall(callback,value)
+        local hit = Instance.new("TextButton", slider)
+        hit.Size = UDim2.new(1,0,1,0)
+        hit.BackgroundTransparency = 1
+        hit.Text = ""
+        hit.AutoButtonColor = false
+
+        local draggingSlider = false
+        local function setFromPosition(absX)
+            local rel = math.clamp(absX - slider.AbsolutePosition.X, 0, slider.AbsoluteSize.X)
+            local val = math.floor((rel/slider.AbsoluteSize.X)*(max-min) + min)
+            val = math.clamp(val, min, max)
+            fill.Size = UDim2.new((val-min)/(max-min),0,1,0)
+            label.Text = labelText.." ("..val..")"
+            pcall(callback, val)
+        end
+
+        hit.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                draggingSlider = true
+                setFromPosition(input.Position.X)
             end
+        end)
+        hit.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                draggingSlider = false
+            end
+        end)
+        table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+            if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+                setFromPosition(input.Position.X)
+            end
+        end))
+
+        -- ensure proper initial setting after layout
+        slider:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            setFromPosition(slider.AbsolutePosition.X + fill.AbsoluteSize.X)
         end)
     end
 
     local yOffset = 10
-    createSlider(playerTab,"WalkSpeed (works no way)",16,200,16,function(val)
+    createSlider(playerTab,"WalkSpeed",16,200,16,function(val)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = val
         end
     end,yOffset); yOffset = yOffset + 60
 
-    createSlider(playerTab,"JumpPower (works no way)",50,300,50,function(val)
+    createSlider(playerTab,"JumpPower",50,300,50,function(val)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower = val
         end
     end,yOffset); yOffset = yOffset + 60
 
-    createSlider(playerTab,"MaxHealth (idk if actually work fr)",100,1000,100,function(val)
+    createSlider(playerTab,"MaxHealth",100,1000,100,function(val)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").MaxHealth = val
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Health = val
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            hum.MaxHealth = val
+            hum.Health = val
         end
     end,yOffset); yOffset = yOffset + 60
 
     local flySpeed = 100
-    createSlider(playerTab,"Fly Speed (bugged so stfu)",50,300,100,function(val) flySpeed=val end,yOffset); yOffset = yOffset + 60
+    createSlider(playerTab,"Fly Speed",50,300,100,function(val) flySpeed = val end,yOffset); yOffset = yOffset + 60
 
-    -- Advanced Fly
+    -- Advanced Fly (robust, single set of connections)
     local flying = false
     local flyToggle = Instance.new("TextButton", playerTab)
     flyToggle.Size = UDim2.new(0,160,0,32)
@@ -308,45 +430,115 @@ local function unlock()
     flyToggle.TextColor3 = Color3.fromRGB(255,255,255)
     flyToggle.Text = "Toggle Fly"
     Instance.new("UICorner", flyToggle)
-    flyToggle.MouseButton1Click:Connect(function()
-        flying = not flying
+
+    local flyBV, flyBG
+    local flyRenderConn, flyBeginConn, flyEndConn, flyCharConn
+    local inputKeys = {W=false,A=false,S=false,D=false,Up=false,Down=false}
+    local function startFly()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if hrp:FindFirstChild("FlyVelocity") then hrp.FlyVelocity:Destroy() end
+        if hrp:FindFirstChild("FlyGyro") then hrp.FlyGyro:Destroy() end
+
+        flyBV = Instance.new("BodyVelocity")
+        flyBV.Name = "FlyVelocity"
+        flyBV.MaxForce = Vector3.new(1e5,1e5,1e5)
+        flyBV.Velocity = Vector3.new(0,0,0)
+        flyBV.P = 1250
+        flyBV.Parent = hrp
+
+        flyBG = Instance.new("BodyGyro")
+        flyBG.Name = "FlyGyro"
+        flyBG.MaxTorque = Vector3.new(1e5,1e5,1e5)
+        flyBG.P = 1250
+        flyBG.CFrame = hrp.CFrame
+        flyBG.Parent = hrp
+
+        local cam = workspace.CurrentCamera
+        local accel = 0.35
+
+        flyRenderConn = RunService.RenderStepped:Connect(function()
+            if not flying or not hrp or not flyBV or not flyBG then return end
+            local dir = Vector3.new()
+            if inputKeys.W then dir = dir + cam.CFrame.LookVector end
+            if inputKeys.S then dir = dir - cam.CFrame.LookVector end
+            if inputKeys.A then dir = dir - cam.CFrame.RightVector end
+            if inputKeys.D then dir = dir + cam.CFrame.RightVector end
+            if inputKeys.Up then dir = dir + Vector3.new(0,1,0) end
+            if inputKeys.Down then dir = dir - Vector3.new(0,1,0) end
+
+            local target = (dir.Magnitude > 0) and dir.Unit * flySpeed or Vector3.new(0,0,0)
+            flyBV.Velocity = flyBV.Velocity:Lerp(target, accel)
+            flyBG.CFrame = hrp.CFrame:Lerp(CFrame.new(hrp.Position, hrp.Position + cam.CFrame.LookVector), accel)
+        end)
+
+        flyBeginConn = UserInputService.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            local k = input.KeyCode
+            if k == Enum.KeyCode.W then inputKeys.W = true end
+            if k == Enum.KeyCode.S then inputKeys.S = true end
+            if k == Enum.KeyCode.A then inputKeys.A = true end
+            if k == Enum.KeyCode.D then inputKeys.D = true end
+            if k == Enum.KeyCode.Space then inputKeys.Up = true end
+            if k == Enum.KeyCode.LeftShift then inputKeys.Down = true end
+        end)
+        flyEndConn = UserInputService.InputEnded:Connect(function(input, processed)
+            if processed then return end
+            local k = input.KeyCode
+            if k == Enum.KeyCode.W then inputKeys.W = false end
+            if k == Enum.KeyCode.S then inputKeys.S = false end
+            if k == Enum.KeyCode.A then inputKeys.A = false end
+            if k == Enum.KeyCode.D then inputKeys.D = false end
+            if k == Enum.KeyCode.Space then inputKeys.Up = false end
+            if k == Enum.KeyCode.LeftShift then inputKeys.Down = false end
+        end)
+
+        flyCharConn = LocalPlayer.CharacterAdded:Connect(function()
+            -- cleanup if character respawns
+            flying = false
+            if flyRenderConn then flyRenderConn:Disconnect(); flyRenderConn=nil end
+            if flyBeginConn then flyBeginConn:Disconnect(); flyBeginConn=nil end
+            if flyEndConn then flyEndConn:Disconnect(); flyEndConn=nil end
+            if flyCharConn then flyCharConn:Disconnect(); flyCharConn=nil end
+            if flyBV and flyBV.Parent then flyBV:Destroy(); flyBV = nil end
+            if flyBG and flyBG.Parent then flyBG:Destroy(); flyBG = nil end
+        end)
+    end
+
+    local function stopFly()
+        flying = false
+        if flyRenderConn then flyRenderConn:Disconnect(); flyRenderConn=nil end
+        if flyBeginConn then flyBeginConn:Disconnect(); flyBeginConn=nil end
+        if flyEndConn then flyEndConn:Disconnect(); flyEndConn=nil end
+        if flyCharConn then flyCharConn:Disconnect(); flyCharConn=nil end
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if flying and hrp then
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
-            bodyVelocity.Velocity = Vector3.new(0,0,0)
-            bodyVelocity.Name = "FlyVelocity"
-            bodyVelocity.Parent = hrp
-
-            local bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
-            bodyGyro.CFrame = hrp.CFrame
-            bodyGyro.Name = "FlyGyro"
-            bodyGyro.Parent = hrp
-
-            local cam = workspace.CurrentCamera
-            RunService.RenderStepped:Connect(function()
-                if not flying or not hrp:FindFirstChild("FlyVelocity") then return end
-                local direction = Vector3.new()
-                local keys = {w=false,a=false,s=false,d=false}
-                UserInputService.InputBegan:Connect(function(i,gp) if gp then return end if i.KeyCode==Enum.KeyCode.W then keys.w=true elseif i.KeyCode==Enum.KeyCode.A then keys.a=true elseif i.KeyCode==Enum.KeyCode.S then keys.s=true elseif i.KeyCode==Enum.KeyCode.D then keys.d=true end end)
-                UserInputService.InputEnded:Connect(function(i,gp) if gp then return end if i.KeyCode==Enum.KeyCode.W then keys.w=false elseif i.KeyCode==Enum.KeyCode.A then keys.a=false elseif i.KeyCode==Enum.KeyCode.S then keys.s=false elseif i.KeyCode==Enum.KeyCode.D then keys.d=false end end)
-                local moveDir = (cam.CFrame.LookVector*(keys.w and 1 or 0) + cam.CFrame.LookVector*(-(keys.s and 1 or 0)) + cam.CFrame.RightVector*(keys.d and 1 or 0) + cam.CFrame.RightVector*(-(keys.a and 1 or 0)))
-                bodyVelocity.Velocity = moveDir.Unit*flySpeed
-                bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + cam.CFrame.LookVector)
-            end)
-        elseif hrp then
+        if hrp then
             if hrp:FindFirstChild("FlyVelocity") then hrp.FlyVelocity:Destroy() end
             if hrp:FindFirstChild("FlyGyro") then hrp.FlyGyro:Destroy() end
+        end
+    end
+
+    flyToggle.MouseButton1Click:Connect(function()
+        flying = not flying
+        flyToggle.Text = flying and "Fly: ON" or "Fly: OFF"
+        if flying then
+            startFly()
+        else
+            stopFly()
         end
     end)
 
     -- --- TELEPORT TAB ---
     local teleportTab = screens["Teleport"]
-    local function refreshTeleportPlayers()
-        for _, obj in pairs(teleportTab:GetChildren()) do
-            if obj:IsA("TextButton") then obj:Destroy() end
+    local playerButtons = {}
+
+    function refreshTeleportPlayers()
+        -- destroy existing player buttons
+        for _, btn in ipairs(playerButtons) do
+            if btn and btn.Parent then btn:Destroy() end
         end
+        playerButtons = {}
         local y = 10
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer then
@@ -362,34 +554,58 @@ local function unlock()
                         LocalPlayer.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame + Vector3.new(0,5,0)
                     end
                 end)
+                table.insert(playerButtons, btn)
                 y = y + 42
             end
         end
     end
 
+    -- Auto-update on join/leave
+    table.insert(connections, Players.PlayerAdded:Connect(refreshTeleportPlayers))
+    table.insert(connections, Players.PlayerRemoving:Connect(refreshTeleportPlayers))
+
     -- --- TELEPORT-ETC TAB ---
     local teleportEtcTab = screens["Teleport-etc"]
-    local function refreshTeleportEtc()
+
+    local function getModelCenter(model)
+        if model.PrimaryPart then return model.PrimaryPart.Position end
+        local sum = Vector3.new(0,0,0)
+        local count = 0
+        for _,c in pairs(model:GetDescendants()) do
+            if c:IsA("BasePart") then
+                sum = sum + c.Position
+                count = count + 1
+            end
+        end
+        if count > 0 then return sum / count end
+        return nil
+    end
+
+    function refreshTeleportEtc()
+        -- clear previous buttons
         for _, obj in pairs(teleportEtcTab:GetChildren()) do
             if obj:IsA("TextButton") then obj:Destroy() end
         end
         local y = 10
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
-            -- Detect current Spawn
+            -- Detect current Spawn1..Spawn8
             local currentSpawn
             for i=1,8 do
-                local spawnModel = workspace:FindFirstChild("Spawn"..i)
-                if spawnModel and spawnModel.PrimaryPart then
-                    local bounds = spawnModel:GetExtentsSize()/2
-                    local pos = spawnModel.PrimaryPart.Position
-                    if (hrp.Position - pos).Magnitude <= math.max(bounds.X,bounds.Z) then
-                        currentSpawn = spawnModel
-                        break
+                local spawnModel = Workspace:FindFirstChild("Spawn"..i)
+                if spawnModel then
+                    local pos = getModelCenter(spawnModel)
+                    local size = spawnModel:GetExtentsSize()
+                    if pos then
+                        local maxRange = math.max(size.X, size.Z)/2 + 8
+                        if (hrp.Position - pos).Magnitude <= maxRange then
+                            currentSpawn = spawnModel
+                            break
+                        end
                     end
                 end
             end
-            if currentSpawn then
+            if currentSpawn and currentSpawn.PrimaryPart then
                 local btn = Instance.new("TextButton", teleportEtcTab)
                 btn.Size = UDim2.new(0,180,0,32)
                 btn.Position = UDim2.new(0,10,0,y)
@@ -398,43 +614,60 @@ local function unlock()
                 btn.Text = "Teleport to "..currentSpawn.Name
                 Instance.new("UICorner", btn)
                 btn.MouseButton1Click:Connect(function()
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = currentSpawn.PrimaryPart.CFrame + Vector3.new(0,5,0)
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = currentSpawn.PrimaryPart.CFrame + Vector3.new(0,5,0)
+                    end
                 end)
                 y = y + 42
             end
         end
 
-        -- Teleport to BlockGivers
-        local giversFolder = workspace:FindFirstChild("CenterBlocks") and workspace.CenterBlocks:FindFirstChild("Givers")
+        -- Teleport to BlockGivers (including Rainbow1/Rainbow2 etc)
+        local giversFolder = Workspace:FindFirstChild("CenterBlocks") and Workspace.CenterBlocks:FindFirstChild("Givers")
         if giversFolder then
             for _, giver in pairs(giversFolder:GetChildren()) do
-                if giver:IsA("Model") and giver.PrimaryPart then
-                    local btn = Instance.new("TextButton", teleportEtcTab)
-                    btn.Size = UDim2.new(0,180,0,32)
-                    btn.Position = UDim2.new(0,10,0,y)
-                    btn.BackgroundColor3 = Color3.fromRGB(70,130,240)
-                    btn.TextColor3 = Color3.fromRGB(255,255,255)
-                    btn.Text = "Teleport to "..giver.Name
-                    Instance.new("UICorner", btn)
-                    btn.MouseButton1Click:Connect(function()
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = giver.PrimaryPart.CFrame + Vector3.new(0,5,0)
-                    end)
-                    y = y + 42
+                if giver:IsA("Model") then
+                    -- try to find a primary part or compute center
+                    local pos = getModelCenter(giver)
+                    if pos then
+                        local btn = Instance.new("TextButton", teleportEtcTab)
+                        btn.Size = UDim2.new(0,180,0,32)
+                        btn.Position = UDim2.new(0,10,0,y)
+                        btn.BackgroundColor3 = Color3.fromRGB(70,130,240)
+                        btn.TextColor3 = Color3.fromRGB(255,255,255)
+                        btn.Text = "Teleport to "..giver.Name
+                        Instance.new("UICorner", btn)
+                        btn.MouseButton1Click:Connect(function()
+                            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                if giver.PrimaryPart then
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = giver.PrimaryPart.CFrame + Vector3.new(0,5,0)
+                                else
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos) + Vector3.new(0,5,0)
+                                end
+                            end
+                        end)
+                        y = y + 42
+                    end
                 end
             end
         end
     end
 
+    -- initial refresh calls
     refreshTeleportPlayers()
     refreshTeleportEtc()
-    Players.PlayerAdded:Connect(function()
-        refreshTeleportPlayers()
-        refreshTeleportEtc()
-    end)
-    Players.PlayerRemoving:Connect(function()
-        refreshTeleportPlayers()
-        refreshTeleportEtc()
-    end)
+
+    -- ensure Teleport tab updates when opened (handler in makeTab above triggers refresh)
+    -- refresh on players join/remove already connected
+
+    -- when GUI destroyed, clean up connections (not strictly necessary here, but good practice)
+    table.insert(connections, screenGui.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            for _, c in ipairs(connections) do
+                if c and c.Disconnect then pcall(function() c:Disconnect() end) end
+            end
+        end
+    end))
 end
 
 -- --- BUTTONS ---
@@ -443,7 +676,7 @@ submit.MouseButton1Click:Connect(function()
     if table.find(ALLOWED_KEYS,val) then
         unlock()
     else
-        feedback.Text = "Invalid key nigga!"
+        feedback.Text = "Invalid key!"
     end
 end)
 
