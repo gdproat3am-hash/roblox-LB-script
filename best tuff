@@ -297,6 +297,7 @@ local function unlock()
     makeTab("Teleport",3)
     makeTab("Teleport-etc",4)
     makeTab("Settings",5)
+    makeTab("Premium",6)
 
     screens["Spawner"].Visible = true
 
@@ -355,8 +356,8 @@ local function unlock()
     saveBtn.MouseButton1Click:Connect(function()
         local cfg = {
             theme = LocalPlayer:GetAttribute("NTD_Theme") or "dark",
-            walk = desiredWalk,
-            jump = desiredJump,
+            walk = _G.CustomKeyState.desiredWalk,
+            jump = _G.CustomKeyState.desiredJump,
             flyMode = flyMode,
         }
         local json = HttpService:JSONEncode(cfg)
@@ -375,8 +376,8 @@ local function unlock()
             local ok, cfg = pcall(function() return HttpService:JSONDecode(json) end)
             if ok and type(cfg) == "table" then
                 if cfg.theme then applyTheme(cfg.theme) end
-                if cfg.walk then desiredWalk = cfg.walk end
-                if cfg.jump then desiredJump = cfg.jump end
+                if cfg.walk then _G.CustomKeyState.desiredWalk = cfg.walk; LocalPlayer:SetAttribute("NTD_WalkSpeed", cfg.walk) end
+                if cfg.jump then _G.CustomKeyState.desiredJump = cfg.jump; LocalPlayer:SetAttribute("NTD_JumpPower", cfg.jump) end
                 if cfg.flyMode then flyMode = cfg.flyMode; flyModeBtn.Text = "Fly Mode: "..flyMode end
                 feedback.Text = "Config loaded"
             else
@@ -386,6 +387,1106 @@ local function unlock()
             feedback.Text = "No config saved"
         end
     end)
+
+    -- Advanced settings: named config save/load/export/import
+    local cfgNameBox = Instance.new("TextBox", settingsScreen)
+    cfgNameBox.Size = UDim2.new(0,200,0,28)
+    cfgNameBox.Position = UDim2.new(0,10,0,120)
+    cfgNameBox.PlaceholderText = "Config name"
+    Instance.new("UICorner", cfgNameBox)
+
+    local saveAsBtn = Instance.new("TextButton", settingsScreen)
+    saveAsBtn.Size = UDim2.new(0,100,0,28)
+    saveAsBtn.Position = UDim2.new(0,220,0,120)
+    saveAsBtn.Text = "Save As"
+    Instance.new("UICorner", saveAsBtn)
+    saveAsBtn.MouseButton1Click:Connect(function()
+        local name = tostring(cfgNameBox.Text or ""):gsub("%s+","")
+        if name == "" then feedback.Text = "Enter a name" return end
+        local storeJson = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
+        local ok, store = pcall(function() return HttpService:JSONDecode(storeJson) end)
+        if not ok or type(store) ~= "table" then store = {} end
+        store[name] = {
+            theme = LocalPlayer:GetAttribute("NTD_Theme") or "dark",
+            walk = _G.CustomKeyState.desiredWalk,
+            jump = _G.CustomKeyState.desiredJump,
+            flyMode = flyMode,
+        }
+        pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(store)) end)
+        feedback.Text = "Saved as "..name
+        refreshConfigList()
+    end)
+
+    local configListFrame = Instance.new("Frame", settingsScreen)
+    configListFrame.Size = UDim2.new(1,-20,0,120)
+    configListFrame.Position = UDim2.new(0,10,0,160)
+    configListFrame.BackgroundTransparency = 1
+
+    local function refreshConfigList()
+        for _,c in pairs(configListFrame:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
+        local storeJson = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
+        local ok, store = pcall(function() return HttpService:JSONDecode(storeJson) end)
+        if not ok or type(store) ~= "table" then store = {} end
+        local y = 0
+        for name, cfg in pairs(store) do
+            local lbl = Instance.new("TextLabel", configListFrame)
+            lbl.Size = UDim2.new(0,220,0,20)
+            lbl.Position = UDim2.new(0,0,0,y)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = name
+            lbl.TextColor3 = Color3.fromRGB(220,220,220)
+            lbl.Font = Enum.Font.Gotham
+
+            local loadB = Instance.new("TextButton", configListFrame)
+            loadB.Size = UDim2.new(0,60,0,20)
+            loadB.Position = UDim2.new(0,230,0,y)
+            loadB.Text = "Load"
+            Instance.new("UICorner", loadB)
+            loadB.MouseButton1Click:Connect(function()
+                if cfg.theme then applyTheme(cfg.theme) end
+                if cfg.walk then _G.CustomKeyState.desiredWalk = cfg.walk; LocalPlayer:SetAttribute("NTD_WalkSpeed", cfg.walk) end
+                if cfg.jump then _G.CustomKeyState.desiredJump = cfg.jump; LocalPlayer:SetAttribute("NTD_JumpPower", cfg.jump) end
+                if cfg.flyMode then flyMode = cfg.flyMode; flyModeBtn.Text = "Fly Mode: "..flyMode end
+                feedback.Text = "Loaded "..name
+            end)
+
+            local delB = Instance.new("TextButton", configListFrame)
+            delB.Size = UDim2.new(0,60,0,20)
+            delB.Position = UDim2.new(0,300,0,y)
+            delB.Text = "Delete"
+            Instance.new("UICorner", delB)
+            delB.MouseButton1Click:Connect(function()
+                store[name] = nil
+                pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(store)) end)
+                refreshConfigList()
+                feedback.Text = "Deleted "..name
+            end)
+
+            y = y + 24
+        end
+    end
+    refreshConfigList()
+
+    local exportBtn = Instance.new("TextButton", settingsScreen)
+    exportBtn.Size = UDim2.new(0,100,0,28)
+    exportBtn.Position = UDim2.new(0,10,0,290)
+    exportBtn.Text = "Export Store"
+    Instance.new("UICorner", exportBtn)
+    exportBtn.MouseButton1Click:Connect(function()
+        local json = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
+        -- place into clipboard if available
+        pcall(function() setclipboard(json) end)
+        feedback.Text = "Exported to clipboard"
+    end)
+
+    local importBox = Instance.new("TextBox", settingsScreen)
+    importBox.Size = UDim2.new(0,300,0,28)
+    importBox.Position = UDim2.new(0,120,0,290)
+    importBox.PlaceholderText = "Paste JSON here and press Import"
+    Instance.new("UICorner", importBox)
+
+    local importBtn = Instance.new("TextButton", settingsScreen)
+    importBtn.Size = UDim2.new(0,80,0,28)
+    importBtn.Position = UDim2.new(0,430,0,290)
+    importBtn.Text = "Import"
+    Instance.new("UICorner", importBtn)
+    importBtn.MouseButton1Click:Connect(function()
+        local ok, tbl = pcall(function() return HttpService:JSONDecode(importBox.Text or "{}") end)
+        if ok and type(tbl) == "table" then
+            pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(tbl)) end)
+            refreshConfigList()
+            feedback.Text = "Imported store"
+        else
+            feedback.Text = "Invalid JSON"
+        end
+    end)
+
+    -- Premium tab UI
+    local premiumScreen = screens["Premium"]
+    local premLabel = Instance.new("TextLabel", premiumScreen)
+    premLabel.Size = UDim2.new(1,-20,0,20)
+    premLabel.Position = UDim2.new(0,10,0,10)
+    premLabel.BackgroundTransparency = 1
+    premLabel.Text = "Enter Premium Key"
+    premLabel.Font = Enum.Font.Gotham
+    premLabel.TextSize = 16
+    premLabel.TextColor3 = Color3.fromRGB(220,220,220)
+
+    local premBox = Instance.new("TextBox", premiumScreen)
+    premBox.Size = UDim2.new(0,240,0,28)
+    premBox.Position = UDim2.new(0,10,0,40)
+    premBox.PlaceholderText = "Premium key"
+    premBox.TextSize = 14
+    Instance.new("UICorner", premBox)
+
+    local premBtn = Instance.new("TextButton", premiumScreen)
+    premBtn.Size = UDim2.new(0,120,0,28)
+    premBtn.Position = UDim2.new(0,260,0,40)
+    premBtn.Text = "Unlock"
+    premBtn.TextSize = 14
+    Instance.new("UICorner", premBtn)
+
+    local PREMIUM_KEY = "84923732378946"
+    local premiumOpen = false
+    local PremiumGUI
+
+    premBtn.MouseButton1Click:Connect(function()
+        if premBox.Text == PREMIUM_KEY then
+            feedback.Text = "Premium key accepted"
+
+            -- Ask whether to close the main GUI
+            local confirm = Instance.new("Frame", premiumScreen)
+            confirm.Size = UDim2.new(0,320,0,120)
+            confirm.Position = UDim2.new(0.5,-160,0.5,-60)
+            confirm.BackgroundColor3 = Color3.fromRGB(28,28,30)
+            Instance.new("UICorner", confirm)
+
+            local q = Instance.new("TextLabel", confirm)
+            q.Size = UDim2.new(1,-16,0,48)
+            q.Position = UDim2.new(0,8,0,8)
+            q.BackgroundTransparency = 1
+            q.Text = "Close main GUI and open Premium UI?"
+            q.TextWrapped = true
+            q.Font = Enum.Font.Gotham
+            q.TextColor3 = Color3.fromRGB(220,220,220)
+
+            local yes = Instance.new("TextButton", confirm)
+            yes.Size = UDim2.new(0,120,0,32)
+            yes.Position = UDim2.new(0.5,-130,1,-40)
+            yes.Text = "Yes"
+            Instance.new("UICorner", yes)
+
+            local no = Instance.new("TextButton", confirm)
+            no.Size = UDim2.new(0,120,0,32)
+            no.Position = UDim2.new(0.5,10,1,-40)
+            no.Text = "No"
+            Instance.new("UICorner", no)
+
+            local function openPremiumUI()
+                if premiumOpen and PremiumGUI and PremiumGUI.Parent then
+                    PremiumGUI.Enabled = true
+                    if premToggleBtn then premToggleBtn.BackgroundColor3 = Color3.fromRGB(100,160,255) end
+                    return
+                end
+                premiumOpen = true
+                PremiumGUI = Instance.new("ScreenGui")
+                PremiumGUI.Name = "PremiumGUI"
+                PremiumGUI.ResetOnSpawn = false
+                PremiumGUI.Parent = LocalPlayer.PlayerGui
+
+                local pwindow = Instance.new("Frame", PremiumGUI)
+                pwindow.Name = "PremiumWindow"
+                -- larger, more modern layout
+                pwindow.Size = UDim2.new(0,700,0,480)
+                pwindow.Position = UDim2.new(0.5,0,0.5,0)
+                pwindow.AnchorPoint = Vector2.new(0.5,0.5)
+                pwindow.BackgroundColor3 = Color3.fromRGB(18,18,22)
+                Instance.new("UICorner", pwindow)
+
+                -- subtle accent bar
+                local accent = Instance.new("Frame", pwindow)
+                accent.Size = UDim2.new(1,0,0,6)
+                accent.Position = UDim2.new(0,0,0,0)
+                accent.BackgroundColor3 = Color3.fromRGB(85,120,255)
+                Instance.new("UICorner", accent)
+
+                -- header with drag, minimize, close
+                local pheader = Instance.new("Frame", pwindow)
+                pheader.Size = UDim2.new(1,0,0,40)
+                pheader.BackgroundColor3 = Color3.fromRGB(16,16,16)
+                Instance.new("UICorner", pheader)
+
+                local ptitle = Instance.new("TextLabel", pheader)
+                ptitle.Size = UDim2.new(1,-120,1,0)
+                ptitle.Position = UDim2.new(0,12,0,0)
+                ptitle.BackgroundTransparency = 1
+                ptitle.Text = "Premium Utility"
+                ptitle.Font = Enum.Font.GothamBold
+                ptitle.TextSize = 20
+                ptitle.TextColor3 = Color3.fromRGB(245,245,245)
+                ptitle.TextXAlignment = Enum.TextXAlignment.Left
+
+                local pbtnMin = Instance.new("TextButton", pheader)
+                pbtnMin.Size = UDim2.new(0,44,0,28)
+                pbtnMin.Position = UDim2.new(1,-108,0,6)
+                pbtnMin.Text = "-"
+                pbtnMin.Font = Enum.Font.GothamBold
+                pbtnMin.TextSize = 18
+                pbtnMin.BackgroundColor3 = Color3.fromRGB(80,80,80)
+                Instance.new("UICorner", pbtnMin)
+
+                local pbtnClose = Instance.new("TextButton", pheader)
+                pbtnClose.Size = UDim2.new(0,44,0,28)
+                pbtnClose.Position = UDim2.new(1,-56,0,6)
+                pbtnClose.Text = "x"
+                pbtnClose.Font = Enum.Font.GothamBold
+                pbtnClose.TextSize = 18
+                pbtnClose.BackgroundColor3 = Color3.fromRGB(160,50,50)
+                Instance.new("UICorner", pbtnClose)
+
+                local pleft = Instance.new("Frame", pwindow)
+                pleft.Size = UDim2.new(0,200,1,-50)
+                pleft.Position = UDim2.new(0,0,0,50)
+                pleft.BackgroundTransparency = 1
+
+                -- left accent
+                local pleftAccent = Instance.new("Frame", pleft)
+                pleftAccent.Size = UDim2.new(0,6,1,0)
+                pleftAccent.Position = UDim2.new(0,0,0,0)
+                pleftAccent.BackgroundColor3 = Color3.fromRGB(85,120,255)
+                Instance.new("UICorner", pleftAccent)
+
+                local pcontent = Instance.new("Frame", pwindow)
+                pcontent.Size = UDim2.new(1,-200,1,-50)
+                pcontent.Position = UDim2.new(0,200,0,50)
+                pcontent.BackgroundTransparency = 1
+
+                -- tabs Spawner, Player
+                local pScreens = {}
+                local function makePremiumTab(name, order)
+                    local btn = Instance.new("TextButton", pleft)
+                    btn.Size = UDim2.new(1,-10,0,42)
+                    btn.Position = UDim2.new(0,5,0,8 + (order-1)*(42+8))
+                    btn.Text = name
+                    btn.Font = Enum.Font.Gotham
+                    btn.TextSize = 16
+                    btn.BackgroundColor3 = Color3.fromRGB(36,36,38)
+                    btn.TextColor3 = Color3.fromRGB(230,230,230)
+                    Instance.new("UICorner", btn)
+
+                    local scr = Instance.new("Frame", pcontent)
+                    scr.Size = UDim2.new(1,-12,1,-12)
+                    scr.Position = UDim2.new(0,6,0,6)
+                    scr.BackgroundTransparency = 1
+                    scr.Visible = false
+                    pScreens[name] = scr
+
+                    btn.MouseButton1Click:Connect(function()
+                        for _,s in pairs(pScreens) do s.Visible = false end
+                        scr.Visible = true
+                    end)
+                end
+
+                makePremiumTab("Spawner",1)
+                makePremiumTab("Player",2)
+                makePremiumTab("Combat",3)
+                makePremiumTab("Unfair",4)
+                makePremiumTab("Misc",5)
+                pScreens["Spawner"].Visible = true
+
+                -- fill premium spawner content (reuse blockRemotes)
+                local pspawner = pScreens["Spawner"]
+                local pblockRemotes = {"SpawnDiamondBlock","SpawnGalaxyBlock","SpawnLuckyBlock","SpawnRainbowBlock","SpawnSuperBlock"}
+                local py = 10
+                for i, name in ipairs(pblockRemotes) do
+                    local b = Instance.new("TextButton", pspawner)
+                    b.Size = UDim2.new(0,180,0,38)
+                    b.Position = UDim2.new(0,10,0,py)
+                    b.Text = name:gsub("Spawn","")
+                    b.BackgroundColor3 = Color3.fromRGB(80,130,240)
+                    b.TextColor3 = Color3.fromRGB(255,255,255)
+                    Instance.new("UICorner", b)
+                    b.MouseButton1Click:Connect(function()
+                        local remote = ReplicatedStorage:FindFirstChild(name)
+                        if remote then
+                            if remote:IsA("RemoteEvent") then
+                                pcall(function() remote:FireServer() end)
+                            elseif remote:IsA("RemoteFunction") then
+                                pcall(function() remote:InvokeServer() end)
+                            end
+                        end
+                    end)
+                    py = py + 46
+                end
+
+                -- adjustable loop spawn controls (interval 0.01 - 2)
+                local intervalLabel = Instance.new("TextLabel", pspawner)
+                intervalLabel.Size = UDim2.new(0,220,0,20)
+                intervalLabel.Position = UDim2.new(0,10,0,py)
+                intervalLabel.BackgroundTransparency = 1
+                intervalLabel.Text = "Loop Interval (s):"
+                intervalLabel.Font = Enum.Font.Gotham
+                intervalLabel.TextSize = 14
+                intervalLabel.TextColor3 = Color3.fromRGB(220,220,220)
+
+                local intervalBox = Instance.new("TextBox", pspawner)
+                intervalBox.Size = UDim2.new(0,80,0,28)
+                intervalBox.Position = UDim2.new(0,140,0,py-2)
+                intervalBox.Text = "0.1"
+                intervalBox.ClearTextOnFocus = false
+                intervalBox.TextSize = 14
+                Instance.new("UICorner", intervalBox)
+
+                local pLoopToggle = Instance.new("TextButton", pspawner)
+                pLoopToggle.Size = UDim2.new(0,120,0,36)
+                pLoopToggle.Position = UDim2.new(0,10,0,py+36)
+                pLoopToggle.Text = "Start Loop"
+                pLoopToggle.Font = Enum.Font.GothamBold
+                pLoopToggle.TextSize = 14
+                pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
+                Instance.new("UICorner", pLoopToggle)
+
+                local pLooping = false
+                local pLoopJob = nil
+
+                local function safeFireSpawn()
+                    local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
+                    if remote then
+                        if remote:IsA("RemoteEvent") then pcall(function() remote:FireServer() end)
+                        elseif remote:IsA("RemoteFunction") then pcall(function() remote:InvokeServer() end) end
+                    end
+                end
+
+                pLoopToggle.MouseButton1Click:Connect(function()
+                    if pLooping then
+                        -- stop the loop
+                        pLooping = false
+                        pLoopToggle.Text = "Start Loop"
+                        pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
+                        return
+                    end
+
+                    -- start the loop safely
+                    pLooping = true
+                    pLoopToggle.Text = "Stop Loop"
+                    pLoopToggle.BackgroundColor3 = Color3.fromRGB(100,200,100)
+
+                    -- ensure only one job runs
+                    if pLoopJob and coroutine.status(pLoopJob) ~= "dead" then
+                        -- already running; just return
+                        return
+                    end
+
+                    pLoopJob = coroutine.create(function()
+                        local stopAfter = tonumber(durationBox.Text) or 0
+                        if stopAfter <= 0 then stopAfter = nil end
+                        local endTime = stopAfter and (tick() + stopAfter) or nil
+                        while pLooping and (not endTime or tick() < endTime) do
+                            local val = tonumber(intervalBox.Text) or 0.1
+                            val = math.clamp(val, 0.01, 2)
+                            safeFireSpawn()
+                            -- wait in small increments so UI stop is responsive
+                            local waited = 0
+                            while waited < val and pLooping do
+                                local step = math.min(0.1, val - waited)
+                                wait(step)
+                                waited = waited + step
+                            end
+                        end
+                        pLooping = false
+                        -- update UI back on main thread
+                        pcall(function()
+                            pLoopToggle.Text = "Start Loop"
+                            pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
+                        end)
+                    end)
+                    coroutine.resume(pLoopJob)
+                end)
+
+                -- duration selection (text or slider)
+                local modeLabel = Instance.new("TextLabel", pspawner)
+                modeLabel.Size = UDim2.new(0,220,0,20)
+                modeLabel.Position = UDim2.new(0,10,0,py)
+                modeLabel.BackgroundTransparency = 1
+                modeLabel.Text = "Loop Duration (s):"
+                modeLabel.Font = Enum.Font.Gotham
+                modeLabel.TextSize = 14
+                modeLabel.TextColor3 = Color3.fromRGB(220,220,220)
+
+                local durationBox = Instance.new("TextBox", pspawner)
+                durationBox.Size = UDim2.new(0,80,0,28)
+                durationBox.Position = UDim2.new(0,140,0,py-2)
+                durationBox.Text = "10"
+                durationBox.ClearTextOnFocus = false
+                durationBox.TextSize = 14
+                Instance.new("UICorner", durationBox)
+
+                -- alternative: small slider for duration
+                local durationSliderCont = Instance.new("Frame", pspawner)
+                durationSliderCont.Size = UDim2.new(0,220,0,28)
+                durationSliderCont.Position = UDim2.new(0,240,0,py-2)
+                durationSliderCont.BackgroundTransparency = 1
+                -- simple slider implementation (0-60s)
+                local dSlider = Instance.new("Frame", durationSliderCont)
+                dSlider.Size = UDim2.new(1,0,1,0)
+                dSlider.BackgroundColor3 = Color3.fromRGB(60,60,60)
+                Instance.new("UICorner", dSlider)
+                local dFill = Instance.new("Frame", dSlider)
+                dFill.Size = UDim2.new(0.166,0,1,0)
+                dFill.BackgroundColor3 = Color3.fromRGB(120,180,255)
+                Instance.new("UICorner", dFill)
+                local dHit = Instance.new("TextButton", dSlider)
+                dHit.Size = UDim2.new(1,0,1,0)
+                dHit.Text = ""
+                dHit.BackgroundTransparency = 1
+                local draggingDur = false
+                local function setDurationFromX(absX)
+                    local rel = math.clamp(absX - dSlider.AbsolutePosition.X, 0, dSlider.AbsoluteSize.X)
+                    local val = (rel / dSlider.AbsoluteSize.X) * 60
+                    dFill.Size = UDim2.new(val/60,0,1,0)
+                    durationBox.Text = string.format("%.2f", math.floor(val*100)/100)
+                end
+                dHit.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        draggingDur = true
+                        setDurationFromX(input.Position.X)
+                    end
+                end)
+                dHit.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        draggingDur = false
+                    end
+                end)
+                table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+                    if draggingDur and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        setDurationFromX(input.Position.X)
+                    end
+                end))
+
+                pLoopToggle.MouseButton1Click:Connect(function()
+                    pLooping = not pLooping
+                    pLoopToggle.Text = pLooping and "Stop Loop" or "Start Loop"
+                    if not pLooping then pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220) else pLoopToggle.BackgroundColor3 = Color3.fromRGB(100,200,100) end
+                    if pLooping then
+                        -- run loop for specified duration
+                        spawn(function()
+                            local stopAfter = tonumber(durationBox.Text) or 10
+                            stopAfter = math.max(0, stopAfter)
+                            local endTime = tick() + stopAfter
+                            while tick() < endTime and pLooping do
+                                local val = tonumber(intervalBox.Text) or 0.1
+                                val = math.clamp(val, 0.01, 2)
+                                local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
+                                if remote then
+                                    if remote:IsA("RemoteEvent") then pcall(function() remote:FireServer() end)
+                                    elseif remote:IsA("RemoteFunction") then pcall(function() remote:InvokeServer() end) end
+                                end
+                                wait(val)
+                            end
+                            pLooping = false
+                            pLoopToggle.Text = "Start Loop"
+                            pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
+                        end)
+                    end
+                end)
+                py = py + 120
+
+                -- player tab: small sliders for Walk/Jump
+                local pplayer = pScreens["Player"]
+                local function addSmallSlider(parent, text, min, max, default, y)
+                    local lab = Instance.new("TextLabel", parent)
+                    lab.Size = UDim2.new(1,-20,0,20)
+                    lab.Position = UDim2.new(0,10,0,y)
+                    lab.BackgroundTransparency = 1
+                    lab.Text = text
+                    lab.Font = Enum.Font.Gotham
+                    lab.TextColor3 = Color3.fromRGB(220,220,220)
+
+                    local s = Instance.new("TextBox", parent)
+                    s.Size = UDim2.new(0,120,0,28)
+                    s.Position = UDim2.new(0,10,0,y+24)
+                    s.Text = tostring(default)
+                    Instance.new("UICorner", s)
+                    return s
+                end
+
+                local walkBox = addSmallSlider(pplayer, "WalkSpeed", 16, 200, _G.CustomKeyState.desiredWalk, 10)
+                local jumpBox = addSmallSlider(pplayer, "JumpPower", 50, 300, _G.CustomKeyState.desiredJump, 80)
+
+                local applyBtn = Instance.new("TextButton", pplayer)
+                applyBtn.Size = UDim2.new(0,120,0,34)
+                applyBtn.Position = UDim2.new(0,10,0,140)
+                applyBtn.Text = "Apply"
+                Instance.new("UICorner", applyBtn)
+                applyBtn.TextSize = 14
+                applyBtn.MouseButton1Click:Connect(function()
+                    local w = tonumber(walkBox.Text) or _G.CustomKeyState.desiredWalk
+                    local j = tonumber(jumpBox.Text) or _G.CustomKeyState.desiredJump
+                    _G.CustomKeyState.desiredWalk = w
+                    _G.CustomKeyState.desiredJump = j
+                    LocalPlayer:SetAttribute("NTD_WalkSpeed", w)
+                    LocalPlayer:SetAttribute("NTD_JumpPower", j)
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                        hum.WalkSpeed = w
+                        hum.JumpPower = j
+                    end
+                    feedback.Text = "Applied"
+                end)
+
+                -- drag support for pwindow (mouse and touch)
+                local pDragging = false
+                local pDragStart = Vector2.new()
+                local pStartPos = pwindow.Position
+                pheader.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        pDragging = true
+                        pDragStart = input.Position
+                        pStartPos = pwindow.Position
+                        input.Changed:Connect(function()
+                            if input.UserInputState == Enum.UserInputState.End then pDragging = false end
+                        end)
+                    end
+                end)
+                table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+                    if pDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        local delta = input.Position - pDragStart
+                        pwindow.Position = pStartPos + UDim2.new(0, delta.X, 0, delta.Y)
+                    end
+                end))
+
+                -- pwindow minimize/close
+                local pMinimized = false
+                pbtnMin.MouseButton1Click:Connect(function()
+                    pMinimized = not pMinimized
+                    pleft.Visible = not pMinimized
+                    pcontent.Visible = not pMinimized
+                    if pMinimized then pwindow.Size = UDim2.new(0,300,0,40) else pwindow.Size = UDim2.new(0,520,0,340) end
+                end)
+                pbtnClose.MouseButton1Click:Connect(function()
+                    if PremiumGUI and PremiumGUI.Parent then
+                        PremiumGUI.Enabled = false
+                        if toggleBtn then toggleBtn.BackgroundColor3 = Color3.fromRGB(40,40,45) end
+                        if premToggleBtn then premToggleBtn.BackgroundColor3 = Color3.fromRGB(60,40,120) end
+                    end
+                end)
+
+                -- ensure global toggle can open PremiumGUI; visual updated below
+                -- Tool-Giver Search UI (hidden by default) inside Premium Window
+                local searchPanel = Instance.new("Frame", pwindow)
+                searchPanel.Name = "ToolSearchPanel"
+                searchPanel.Size = UDim2.new(0,380,0,320)
+                searchPanel.Position = UDim2.new(1,-400,0,70)
+                searchPanel.BackgroundColor3 = Color3.fromRGB(24,24,26)
+                searchPanel.Visible = false
+                Instance.new("UICorner", searchPanel)
+
+                local searchHeader = Instance.new("Frame", searchPanel)
+                searchHeader.Size = UDim2.new(1,0,0,36)
+                searchHeader.Position = UDim2.new(0,0,0,0)
+                searchHeader.BackgroundTransparency = 1
+
+                local searchTitle = Instance.new("TextLabel", searchHeader)
+                searchTitle.Size = UDim2.new(1,-40,1,0)
+                searchTitle.Position = UDim2.new(0,12,0,0)
+                searchTitle.BackgroundTransparency = 1
+                searchTitle.Text = "Tool Giver"
+                searchTitle.Font = Enum.Font.GothamBold
+                searchTitle.TextSize = 18
+                searchTitle.TextColor3 = Color3.fromRGB(240,240,240)
+                searchTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+                local searchClose = Instance.new("TextButton", searchHeader)
+                searchClose.Size = UDim2.new(0,28,0,28)
+                searchClose.Position = UDim2.new(1,-36,0,4)
+                searchClose.Text = "x"
+                searchClose.Font = Enum.Font.GothamBold
+                searchClose.TextSize = 14
+                searchClose.BackgroundColor3 = Color3.fromRGB(160,50,50)
+                Instance.new("UICorner", searchClose)
+
+                local searchBox = Instance.new("TextBox", searchPanel)
+                searchBox.Size = UDim2.new(1,-20,0,36)
+                searchBox.Position = UDim2.new(0,10,0,48)
+                searchBox.PlaceholderText = "Search (e.g. Rainbow)"
+                searchBox.ClearTextOnFocus = true
+                searchBox.TextSize = 14
+                Instance.new("UICorner", searchBox)
+
+                local resultsFrame = Instance.new("ScrollingFrame", searchPanel)
+                resultsFrame.Size = UDim2.new(1,-20,1,-120)
+                resultsFrame.Position = UDim2.new(0,10,0,92)
+                resultsFrame.CanvasSize = UDim2.new(0,0,0,0)
+                resultsFrame.ScrollBarThickness = 8
+                resultsFrame.BackgroundTransparency = 1
+
+                local uiList = Instance.new("UIListLayout", resultsFrame)
+                uiList.Padding = UDim.new(0,8)
+                uiList.SortOrder = Enum.SortOrder.LayoutOrder
+
+                local function clearResults()
+                    for _,c in pairs(resultsFrame:GetChildren()) do if not (c:IsA("UIListLayout")) then c:Destroy() end end
+                end
+
+                local function populateResults(matches)
+                    clearResults()
+                    local y = 0
+                    for idx,toolName in ipairs(matches) do
+                        local entry = Instance.new("Frame", resultsFrame)
+                        entry.LayoutOrder = idx
+                        entry.Size = UDim2.new(1,0,0,56)
+                        entry.BackgroundColor3 = Color3.fromRGB(34,34,36)
+                        Instance.new("UICorner", entry)
+
+                        local lbl = Instance.new("TextLabel", entry)
+                        lbl.Size = UDim2.new(1,-140,1,0)
+                        lbl.Position = UDim2.new(0,12,0,0)
+                        lbl.BackgroundTransparency = 1
+                        lbl.Text = toolName
+                        lbl.Font = Enum.Font.Gotham
+                        lbl.TextSize = 18
+                        lbl.TextColor3 = Color3.fromRGB(230,230,230)
+                        lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+                        local giveBtn = Instance.new("TextButton", entry)
+                        giveBtn.Size = UDim2.new(0,120,0,36)
+                        giveBtn.Position = UDim2.new(1,-132,0,10)
+                        giveBtn.Text = "Give"
+                        giveBtn.Font = Enum.Font.GothamBold
+                        giveBtn.TextSize = 16
+                        giveBtn.BackgroundColor3 = Color3.fromRGB(80,160,100)
+                        Instance.new("UICorner", giveBtn)
+
+                        giveBtn.MouseButton1Click:Connect(function()
+                            local given = false
+                            -- try direct child first
+                            local toolObj = ReplicatedStorage:FindFirstChild(toolName)
+                            if toolObj then
+                                if toolObj:IsA("Tool") then
+                                    local ok,err = pcall(function() toolObj:Clone().Parent = LocalPlayer.Backpack end)
+                                    feedback.Text = ok and (toolName.." given") or ("Failed: "..tostring(err))
+                                    given = ok
+                                elseif toolObj:IsA("BasePart") or toolObj:IsA("Model") then
+                                    local ok,err = pcall(function()
+                                        local t = Instance.new("Tool")
+                                        t.Name = toolObj.Name
+                                        local handle
+                                        if toolObj:IsA("BasePart") then
+                                            handle = toolObj:Clone()
+                                            handle.Name = "Handle"
+                                        else
+                                            local clone = toolObj:Clone()
+                                            local candidate = clone:FindFirstChild("Handle") or clone.PrimaryPart or clone:FindFirstChildWhichIsA("BasePart")
+                                            if candidate then
+                                                handle = candidate:Clone()
+                                                handle.Name = "Handle"
+                                            else
+                                                handle = Instance.new("Part")
+                                                handle.Size = Vector3.new(1,1,1)
+                                                handle.Name = "Handle"
+                                            end
+                                        end
+                                        handle.CanCollide = false
+                                        handle.Anchored = false
+                                        handle.Parent = t
+                                        t.Parent = LocalPlayer.Backpack
+                                    end)
+                                    feedback.Text = ok and (toolName.." given (wrapped)") or ("Failed: "..tostring(err))
+                                    given = ok
+                                end
+                            end
+
+                            -- search descendants for matching name (Tool/Part/Model)
+                            if not given then
+                                for _,d in pairs(ReplicatedStorage:GetDescendants()) do
+                                    if d.Name == toolName then
+                                        if d:IsA("Tool") then
+                                            local ok,err = pcall(function() d:Clone().Parent = LocalPlayer.Backpack end)
+                                            feedback.Text = ok and (toolName.." given") or ("Failed: "..tostring(err))
+                                            given = ok
+                                            break
+                                        elseif d:IsA("BasePart") or d:IsA("Model") then
+                                            local ok,err = pcall(function()
+                                                local t = Instance.new("Tool")
+                                                t.Name = d.Name
+                                                local handle
+                                                if d:IsA("BasePart") then
+                                                    handle = d:Clone()
+                                                    handle.Name = "Handle"
+                                                else
+                                                    local clone = d:Clone()
+                                                    local candidate = clone:FindFirstChild("Handle") or clone.PrimaryPart or clone:FindFirstChildWhichIsA("BasePart")
+                                                    if candidate then
+                                                        handle = candidate:Clone()
+                                                        handle.Name = "Handle"
+                                                    else
+                                                        handle = Instance.new("Part")
+                                                        handle.Size = Vector3.new(1,1,1)
+                                                        handle.Name = "Handle"
+                                                    end
+                                                end
+                                                handle.CanCollide = false
+                                                handle.Anchored = false
+                                                handle.Parent = t
+                                                t.Parent = LocalPlayer.Backpack
+                                            end)
+                                            feedback.Text = ok and (toolName.." given (wrapped)") or ("Failed: "..tostring(err))
+                                            given = ok
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+
+                            -- try common remote names if still not found
+                            if not given then
+                                local remoteNames = {"GiveTool","GiveItem","RequestItem","Give"}
+                                for _,rn in ipairs(remoteNames) do
+                                    local r = ReplicatedStorage:FindFirstChild(rn)
+                                    if r and r:IsA("RemoteEvent") then
+                                        pcall(function() r:FireServer(toolName) end)
+                                        feedback.Text = "Requested tool via server: "..toolName
+                                        given = true
+                                        break
+                                    elseif r and r:IsA("RemoteFunction") then
+                                        pcall(function() r:InvokeServer(toolName) end)
+                                        feedback.Text = "Requested tool via server: "..toolName
+                                        given = true
+                                        break
+                                    end
+                                end
+                            end
+
+                            -- fallback: create a simple local Tool so user 'has' something client-side
+                            if not given then
+                                local ok,err = pcall(function()
+                                    local t = Instance.new("Tool")
+                                    t.Name = toolName
+                                    local handle = Instance.new("Part")
+                                    handle.Name = "Handle"
+                                    handle.Size = Vector3.new(1,1,1)
+                                    handle.Anchored = false
+                                    handle.CanCollide = false
+                                    handle.Parent = t
+                                    t.Parent = LocalPlayer.Backpack
+                                end)
+                                feedback.Text = ok and (toolName.." given (local)") or ("Failed: "..tostring(err))
+                            end
+                        end)
+                    end
+                    -- update canvas size
+                    wait()
+                    resultsFrame.CanvasSize = UDim2.new(0,0,0,uiList.AbsoluteContentSize.Y + 10)
+                end
+
+                -- search logic: find matching Tool names in ReplicatedStorage (and descendants)
+                local function getAllToolNames()
+                    local names = {}
+                    for _,obj in pairs(ReplicatedStorage:GetDescendants()) do
+                        if obj:IsA("Tool") or obj:IsA("ModuleScript") or obj:IsA("Folder") then
+                            table.insert(names, obj.Name)
+                        end
+                    end
+                    -- also include top-level children
+                    for _,c in pairs(ReplicatedStorage:GetChildren()) do
+                        if not table.find(names,c.Name) then table.insert(names,c.Name) end
+                    end
+                    -- include some common game-specific items to help searches even if not present
+                    local extras = {"RainbowSword","RainbowGun","GalaxySword","SuperPickaxe","DiamondAxe","LuckyHammer","SuperTool","RainbowTool","RainbowWand","SpawnEgg_Rainbow"}
+                    for _,e in ipairs(extras) do if not table.find(names,e) then table.insert(names,e) end end
+                    return names
+                end
+
+                local allNames = getAllToolNames()
+                searchBox.Changed:Connect(function(prop)
+                    if prop == "Text" then
+                        local q = (searchBox.Text or "")
+                        if q == "" then clearResults(); return end
+                        local lower = string.lower(q)
+                        local matches = {}
+                        for _,n in ipairs(allNames) do
+                            if string.find(string.lower(n), lower) then table.insert(matches, n) end
+                        end
+                        populateResults(matches)
+                    end
+                end)
+
+                searchClose.MouseButton1Click:Connect(function()
+                    searchPanel.Visible = false
+                end)
+
+                -- small button in premium player tab to open search
+                local openSearchBtn = Instance.new("TextButton", pplayer)
+                openSearchBtn.Size = UDim2.new(0,160,0,36)
+                openSearchBtn.Position = UDim2.new(0,180,0,140)
+                openSearchBtn.Text = "Open Tool Giver"
+                openSearchBtn.Font = Enum.Font.GothamBold
+                openSearchBtn.TextSize = 16
+                openSearchBtn.BackgroundColor3 = Color3.fromRGB(70,130,240)
+                Instance.new("UICorner", openSearchBtn)
+
+                openSearchBtn.MouseButton1Click:Connect(function()
+                    searchPanel.Visible = true
+                    -- refresh name list each time
+                    allNames = getAllToolNames()
+                    clearResults()
+                    searchBox.Text = ""
+                end)
+
+                -- Fix potential off-sync: ensure primary spawner buttons and premium spawner buttons use same sizing and padding logic
+                -- (We standardized sizes earlier; ensure loop button positions align)
+                -- Add Combat Tab to premium
+                local function makePremiumTabIfMissing(name, order)
+                    if not pScreens[name] then
+                        makePremiumTab(name, order)
+                    end
+                end
+                makePremiumTabIfMissing("Combat",3)
+                local pCombat = pScreens["Combat"]
+                -- populate unfair combat features
+                local cy = 10
+                local instaKillBtn = Instance.new("TextButton", pCombat)
+                instaKillBtn.Size = UDim2.new(0,220,0,40)
+                instaKillBtn.Position = UDim2.new(0,10,0,cy)
+                instaKillBtn.Text = "Enable Insta-Kill (Local)"
+                instaKillBtn.Font = Enum.Font.GothamBold
+                instaKillBtn.TextSize = 16
+                instaKillBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)
+                Instance.new("UICorner", instaKillBtn)
+                cy = cy + 52
+
+                local oneHitBtn = Instance.new("TextButton", pCombat)
+                oneHitBtn.Size = UDim2.new(0,220,0,40)
+                oneHitBtn.Position = UDim2.new(0,10,0,cy)
+                oneHitBtn.Text = "One-Hit Enemies (Local)"
+                oneHitBtn.Font = Enum.Font.GothamBold
+                oneHitBtn.TextSize = 16
+                oneHitBtn.BackgroundColor3 = Color3.fromRGB(200,120,40)
+                Instance.new("UICorner", oneHitBtn)
+                cy = cy + 52
+
+                -- Local toggles: these implement client-side patches (may not work server-side)
+                local instaEnabled = false
+                instaKillBtn.MouseButton1Click:Connect(function()
+                    instaEnabled = not instaEnabled
+                    instaKillBtn.Text = instaEnabled and "Insta-Kill: ON" or "Enable Insta-Kill (Local)"
+                    instaKillBtn.BackgroundColor3 = instaEnabled and Color3.fromRGB(100,200,100) or Color3.fromRGB(200,60,60)
+                    feedback.Text = instaEnabled and "Insta-Kill enabled (client)" or "Insta-Kill disabled"
+                end)
+
+                local oneHitEnabled = false
+                oneHitBtn.MouseButton1Click:Connect(function()
+                    oneHitEnabled = not oneHitEnabled
+                    oneHitBtn.Text = oneHitEnabled and "One-Hit: ON" or "One-Hit Enemies (Local)"
+                    oneHitBtn.BackgroundColor3 = oneHitEnabled and Color3.fromRGB(100,200,100) or Color3.fromRGB(200,120,40)
+                    feedback.Text = oneHitEnabled and "One-Hit enabled (client)" or "One-Hit disabled"
+                end)
+
+                -- Teleport all players to you (unfair)
+                local tpAllBtn = Instance.new("TextButton", pCombat)
+                tpAllBtn.Size = UDim2.new(0,220,0,40)
+                tpAllBtn.Position = UDim2.new(0,10,0,cy)
+                tpAllBtn.Text = "Teleport All To You"
+                tpAllBtn.Font = Enum.Font.GothamBold
+                tpAllBtn.TextSize = 16
+                tpAllBtn.BackgroundColor3 = Color3.fromRGB(80,130,240)
+                Instance.new("UICorner", tpAllBtn)
+                cy = cy + 52
+
+                tpAllBtn.MouseButton1Click:Connect(function()
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local myPos = LocalPlayer.Character.HumanoidRootPart.CFrame
+                        for _,plr in pairs(Players:GetPlayers()) do
+                            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                                pcall(function()
+                                    plr.Character.HumanoidRootPart.CFrame = myPos + Vector3.new(0,3,0)
+                                end)
+                            end
+                        end
+                        feedback.Text = "Teleported players to you (client-side)"
+                    end
+                end)
+
+                -- Fling list UI
+                local flingBtn = Instance.new("TextButton", pCombat)
+                flingBtn.Size = UDim2.new(0,220,0,40)
+                flingBtn.Position = UDim2.new(0,10,0,cy)
+                flingBtn.Text = "Fling Selected Player"
+                flingBtn.Font = Enum.Font.GothamBold
+                flingBtn.TextSize = 16
+                flingBtn.BackgroundColor3 = Color3.fromRGB(200,90,40)
+                Instance.new("UICorner", flingBtn)
+                cy = cy + 52
+
+                -- dropdown / simple list of players
+                local flingTargetBox = Instance.new("TextBox", pCombat)
+                flingTargetBox.Size = UDim2.new(0,180,0,28)
+                flingTargetBox.Position = UDim2.new(0,10,0,cy)
+                flingTargetBox.PlaceholderText = "Player name or partial"
+                flingTargetBox.TextSize = 14
+                Instance.new("UICorner", flingTargetBox)
+                cy = cy + 36
+
+                flingBtn.MouseButton1Click:Connect(function()
+                    local q = flingTargetBox.Text or ""
+                    if q == "" then feedback.Text = "Enter a player name"; return end
+                    for _,plr in pairs(Players:GetPlayers()) do
+                        if string.find(string.lower(plr.Name), string.lower(q)) and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                            -- perform a simple client-side fling by applying a high velocity to their HRP if available (may not replicate server-side)
+                            pcall(function()
+                                local bodyVel = Instance.new("BodyVelocity")
+                                bodyVel.Velocity = Vector3.new(0,200,500)
+                                bodyVel.MaxForce = Vector3.new(1e6,1e6,1e6)
+                                bodyVel.P = 1250
+                                bodyVel.Parent = plr.Character.HumanoidRootPart
+                                delay(0.6, function() if bodyVel then bodyVel:Destroy() end end)
+                            end)
+                            feedback.Text = "Flinged "..plr.Name
+                            break
+                        end
+                    end
+                end)
+
+                -- No cooldown toggle (client-side hack / fake)
+                local noCdBtn = Instance.new("TextButton", pCombat)
+                noCdBtn.Size = UDim2.new(0,220,0,40)
+                noCdBtn.Position = UDim2.new(0,10,0,cy)
+                noCdBtn.Text = "No Cooldown (Client)"
+                noCdBtn.Font = Enum.Font.GothamBold
+                noCdBtn.TextSize = 16
+                noCdBtn.BackgroundColor3 = Color3.fromRGB(120,200,120)
+                Instance.new("UICorner", noCdBtn)
+                cy = cy + 52
+
+                local nocd = false
+                noCdBtn.MouseButton1Click:Connect(function()
+                    nocd = not nocd
+                    noCdBtn.Text = nocd and "No Cooldown: ON" or "No Cooldown (Client)"
+                    noCdBtn.BackgroundColor3 = nocd and Color3.fromRGB(100,200,100) or Color3.fromRGB(120,200,120)
+                    feedback.Text = nocd and "No cooldown enabled (client)" or "No cooldown disabled"
+                end)
+
+                -- Unfair tab content
+                local pUnfair = pScreens["Unfair"]
+                if pUnfair then
+                    local uy = 10
+                    local massTpBtn = Instance.new("TextButton", pUnfair)
+                    massTpBtn.Size = UDim2.new(0,260,0,44)
+                    massTpBtn.Position = UDim2.new(0,10,0,uy)
+                    massTpBtn.Text = "Teleport All & Freeze"
+                    massTpBtn.Font = Enum.Font.GothamBold
+                    massTpBtn.TextSize = 16
+                    massTpBtn.BackgroundColor3 = Color3.fromRGB(180,80,200)
+                    Instance.new("UICorner", massTpBtn)
+                    uy = uy + 56
+
+                    local killAllBtn = Instance.new("TextButton", pUnfair)
+                    killAllBtn.Size = UDim2.new(0,260,0,44)
+                    killAllBtn.Position = UDim2.new(0,10,0,uy)
+                    killAllBtn.Text = "Attempt Auto-Kill All"
+                    killAllBtn.Font = Enum.Font.GothamBold
+                    killAllBtn.TextSize = 16
+                    killAllBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+                    Instance.new("UICorner", killAllBtn)
+                    uy = uy + 56
+
+                    massTpBtn.MouseButton1Click:Connect(function()
+                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local myPos = LocalPlayer.Character.HumanoidRootPart.CFrame
+                            for _,plr in pairs(Players:GetPlayers()) do
+                                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                                    pcall(function() plr.Character.HumanoidRootPart.CFrame = myPos + Vector3.new(0,3,0) end)
+                                end
+                            end
+                            feedback.Text = "Mass teleport attempted"
+                        end
+                    end)
+
+                    killAllBtn.MouseButton1Click:Connect(function()
+                        for _,plr in pairs(Players:GetPlayers()) do
+                            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+                                pcall(function() plr.Character:BreakJoints() end)
+                            end
+                        end
+                        feedback.Text = "Attempted to kill players (client-side)"
+                    end)
+                end
+
+                -- Misc tab content
+                local pMisc = pScreens["Misc"]
+                if pMisc then
+                    local my = 10
+                    local dexBtn = Instance.new("TextButton", pMisc)
+                    dexBtn.Size = UDim2.new(0,220,0,40)
+                    dexBtn.Position = UDim2.new(0,10,0,my)
+                    dexBtn.Text = "Run Dex Explorer"
+                    dexBtn.Font = Enum.Font.GothamBold
+                    dexBtn.TextSize = 16
+                    dexBtn.BackgroundColor3 = Color3.fromRGB(60,150,200)
+                    Instance.new("UICorner", dexBtn)
+                    my = my + 52
+
+                    local iyBtn = Instance.new("TextButton", pMisc)
+                    iyBtn.Size = UDim2.new(0,220,0,40)
+                    iyBtn.Position = UDim2.new(0,10,0,my)
+                    iyBtn.Text = "Run InfiniteYield"
+                    iyBtn.Font = Enum.Font.GothamBold
+                    iyBtn.TextSize = 16
+                    iyBtn.BackgroundColor3 = Color3.fromRGB(80,160,120)
+                    Instance.new("UICorner", iyBtn)
+                    my = my + 52
+
+                    dexBtn.MouseButton1Click:Connect(function()
+                        local ok,err = pcall(function()
+                            local code = game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source")
+                            loadstring(code)()
+                        end)
+                        feedback.Text = ok and "DEX/InfiniteYield executed" or "Failed to fetch + run (enable HTTP?)"
+                    end)
+
+                    iyBtn.MouseButton1Click:Connect(function()
+                        local ok,err = pcall(function()
+                            local code = game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source")
+                            loadstring(code)()
+                        end)
+                        feedback.Text = ok and "InfiniteYield executed" or "Failed to fetch + run (enable HTTP?)"
+                    end)
+                end
+
+                -- mobile support: enlarge premium tab buttons for touch
+                for _,child in ipairs(pleft:GetChildren()) do
+                    if child:IsA("TextButton") then child.Size = UDim2.new(1,-16,0,52); child.TextSize = 16 end
+                end
+            end
+            
+            -- wire confirmation buttons
+            yes.MouseButton1Click:Connect(function()
+                -- close main GUI if present
+                local main = LocalPlayer.PlayerGui:FindFirstChild("CustomKeyGUI")
+                if main then main.Enabled = false end
+                if LocalPlayer.PlayerGui:FindFirstChild("GlobalToggleGUI") and LocalPlayer.PlayerGui.GlobalToggleGUI:FindFirstChild("ToggleButton") then
+                    LocalPlayer.PlayerGui.GlobalToggleGUI.ToggleButton.BackgroundColor3 = Color3.fromRGB(40,40,45)
+                end
+                confirm:Destroy()
+                openPremiumUI()
+            end)
+            no.MouseButton1Click:Connect(function()
+                confirm:Destroy()
+                openPremiumUI()
+            end)
+        else
+            feedback.Text = "Invalid premium key"
+        end
+    end)
+
+    -- Premium off-GUI toggle: small circular button to open/close Premium GUI
+    local premiumToggleGui = Instance.new("ScreenGui")
+    premiumToggleGui.Name = "PremiumToggleGUI"
+    premiumToggleGui.ResetOnSpawn = false
+    premiumToggleGui.Parent = LocalPlayer.PlayerGui
+
+    local premToggleBtn = Instance.new("TextButton", premiumToggleGui)
+    premToggleBtn.Name = "PremiumToggleButton"
+    premToggleBtn.Size = UDim2.new(0,56,0,56)
+    premToggleBtn.Position = UDim2.new(1,-140,1,-140)
+    premToggleBtn.BackgroundColor3 = Color3.fromRGB(60,40,120)
+    premToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    premToggleBtn.Text = "P"
+    premToggleBtn.Font = Enum.Font.GothamBold
+    premToggleBtn.TextSize = 18
+    Instance.new("UICorner", premToggleBtn).CornerRadius = UDim.new(1,0)
+    local premArc = Instance.new("UIAspectRatioConstraint", premToggleBtn)
+    premArc.AspectRatio = 1
+
+    premToggleBtn.MouseButton1Click:Connect(function()
+        if PremiumGUI and PremiumGUI.Parent then
+            PremiumGUI.Enabled = not PremiumGUI.Enabled
+            premToggleBtn.BackgroundColor3 = PremiumGUI.Enabled and Color3.fromRGB(100,160,255) or Color3.fromRGB(60,40,120)
+        else
+            feedback.Text = "Premium GUI not open. Enter key in Premium tab first."
+        end
+    end)
+
 
     -- Smooth tweened Drag
 local dragging = false
@@ -449,7 +1550,7 @@ end)
     infoLabel.Text = "Lucky Block spawner. Use 'Loop Lucky (10s)' to spawn repeatedly for 10s."
     infoLabel.TextWrapped = true
     infoLabel.Font = Enum.Font.Gotham
-    infoLabel.TextSize = 12
+    infoLabel.TextSize = 14
     infoLabel.TextColor3 = Color3.fromRGB(200,200,200)
 
     for i, remoteName in ipairs(blockRemotes) do
@@ -658,7 +1759,7 @@ end)
     flyModeBtn.TextColor3 = Color3.fromRGB(255,255,255)
     flyModeBtn.Text = "Fly Mode: Velocity"
     flyModeBtn.Font = Enum.Font.Gotham
-    flyModeBtn.TextSize = 12
+    flyModeBtn.TextSize = 14
     Instance.new("UICorner", flyModeBtn)
     flyModeBtn.MouseButton1Click:Connect(function()
         flyMode = (flyMode == "Velocity") and "CFrame" or "Velocity"
@@ -946,9 +2047,11 @@ end)
         for _, child in pairs(left:GetChildren()) do
             if child:IsA("TextButton") then
                 if enabled then
-                    child.Size = UDim2.new(1,-10,0,48)
+                    child.Size = UDim2.new(1,-10,0,56)
+                    child.TextSize = 16
                 else
                     child.Size = UDim2.new(1,-10,0,36)
+                    child.TextSize = 14
                 end
             end
         end
