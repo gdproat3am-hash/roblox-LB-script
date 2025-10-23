@@ -8,6 +8,12 @@ local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 local Workspace = game:GetService("Workspace")
 
+-- Global state for persistent values
+_G.CustomKeyState = _G.CustomKeyState or {
+    desiredWalk = LocalPlayer:GetAttribute("NTD_WalkSpeed") or 16,
+    desiredJump = LocalPlayer:GetAttribute("NTD_JumpPower") or 50
+}
+
 -- Remove previous GUI
 for _, gui in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
     if gui.Name == "CustomKeyGUI" then gui:Destroy() end
@@ -588,15 +594,18 @@ end)
     end
 
     local yOffset = 10
-    createSlider(playerTab,"WalkSpeed",16,200,16,function(val)
-        desiredWalk = val
+
+    createSlider(playerTab,"WalkSpeed",16,200,_G.CustomKeyState.desiredWalk,function(val)
+        _G.CustomKeyState.desiredWalk = val
+        LocalPlayer:SetAttribute("NTD_WalkSpeed", val) -- persist value
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = val
         end
     end,yOffset); yOffset = yOffset + 60
 
-    createSlider(playerTab,"JumpPower",50,300,50,function(val)
-        desiredJump = val
+    createSlider(playerTab,"JumpPower",50,300,_G.CustomKeyState.desiredJump,function(val)
+        _G.CustomKeyState.desiredJump = val
+        LocalPlayer:SetAttribute("NTD_JumpPower", val) -- persist value
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             LocalPlayer.Character:FindFirstChildOfClass("Humanoid").JumpPower = val
         end
@@ -611,20 +620,19 @@ end)
     end,yOffset); yOffset = yOffset + 60
 
     -- persist desired player values so equipment doesn't reset them
-    local desiredWalk = 16
-    local desiredJump = 50
     table.insert(connections, RunService.Heartbeat:Connect(function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum then
-                if hum.WalkSpeed ~= desiredWalk then hum.WalkSpeed = desiredWalk end
-                if hum.JumpPower ~= desiredJump then hum.JumpPower = desiredJump end
+                if hum.WalkSpeed ~= _G.CustomKeyState.desiredWalk then 
+                    hum.WalkSpeed = _G.CustomKeyState.desiredWalk
+                end
+                if hum.JumpPower ~= _G.CustomKeyState.desiredJump then 
+                    hum.JumpPower = _G.CustomKeyState.desiredJump
+                end
             end
         end
     end))
-
-    -- modify createSlider's callbacks to update desired variables when sliders change
-    -- (we'll rely on the existing createSlider closure, so reassign after creation)
 
     local flySpeed = 100
     createSlider(playerTab,"Fly Speed",50,300,100,function(val) flySpeed = val end,yOffset); yOffset = yOffset + 60
