@@ -68,14 +68,7 @@ toggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-
--- Overlay
-local overlay = Instance.new("Frame", screenGui)
-overlay.Size = UDim2.new(1,0,1,0)
-overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
-overlay.BackgroundTransparency = 0.5
-
--- Modal frame
+-- Main window
 local modal = Instance.new("Frame", screenGui)
 modal.Size = UDim2.new(0,420,0,200)
 modal.Position = UDim2.new(0.5,0,0.5,0)
@@ -83,7 +76,7 @@ modal.AnchorPoint = Vector2.new(0.5,0.5)
 modal.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Instance.new("UICorner", modal)
 
--- Title & description
+-- Title & description-- Title & description
 local title = Instance.new("TextLabel", modal)
 title.Size = UDim2.new(1,-24,0,30)
 title.Position = UDim2.new(0,12,0,12)
@@ -104,6 +97,12 @@ desc.TextSize = 14
 desc.TextColor3 = Color3.fromRGB(200,200,200)
 desc.TextWrapped = true
 
+-- Overlay for initial key entry
+local overlay = Instance.new("Frame", screenGui)
+overlay.Size = UDim2.new(1,0,1,0)
+overlay.BackgroundColor3 = Color3.fromRGB(0,0,0)
+overlay.BackgroundTransparency = 0.5
+
 -- Input box
 local inputBox = Instance.new("TextBox", modal)
 inputBox.Size = UDim2.new(1,-120,0,32)
@@ -111,6 +110,7 @@ inputBox.Position = UDim2.new(0,12,0,100)
 inputBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
 inputBox.TextColor3 = Color3.fromRGB(255,255,255)
 inputBox.ClearTextOnFocus = false
+inputBox.PlaceholderText = "Enter key..."
 Instance.new("UICorner", inputBox)
 
 -- Submit button
@@ -120,6 +120,8 @@ submit.Position = UDim2.new(1,-100,0,100)
 submit.BackgroundColor3 = Color3.fromRGB(70,130,240)
 submit.TextColor3 = Color3.fromRGB(255,255,255)
 submit.Text = "Submit"
+submit.Font = Enum.Font.GothamBold
+submit.TextSize = 14
 Instance.new("UICorner", submit)
 
 -- Copy Discord button
@@ -129,6 +131,8 @@ copyBtn.Position = UDim2.new(0.5,-60,1,-36)
 copyBtn.BackgroundColor3 = Color3.fromRGB(100,150,255)
 copyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 copyBtn.Text = "Copy Discord Link"
+copyBtn.Font = Enum.Font.Gotham
+copyBtn.TextSize = 14
 Instance.new("UICorner", copyBtn)
 
 -- Feedback
@@ -296,28 +300,96 @@ local function unlock()
     makeTab("Player",2)
     makeTab("Teleport",3)
     makeTab("Teleport-etc",4)
-    makeTab("Settings",5)
-    makeTab("Premium",6)
+    makeTab("Misc",5)
+    makeTab("Settings",6)
+    makeTab("Premium",7)
 
     screens["Spawner"].Visible = true
-
-    -- Settings screen content (small theme/config system)
-    local settingsScreen = screens["Settings"]
-    local function applyTheme(name)
-        if name == "dark" then
-            window.BackgroundColor3 = Color3.fromRGB(28,28,30)
-            header.BackgroundColor3 = Color3.fromRGB(20,20,20)
-        elseif name == "light" then
-            window.BackgroundColor3 = Color3.fromRGB(240,240,240)
-            header.BackgroundColor3 = Color3.fromRGB(220,220,220)
-        elseif name == "purple" then
-            window.BackgroundColor3 = Color3.fromRGB(60,20,80)
-            header.BackgroundColor3 = Color3.fromRGB(40,10,60)
-        end
-        -- store current theme as attribute
-        pcall(function() LocalPlayer:SetAttribute("NTD_Theme", name) end)
+    
+    -- Add Misc tab content
+    local miscScreen = screens["Misc"]
+    
+    -- Add useful utilities
+    local function addMiscButton(text, y, callback)
+        local btn = Instance.new("TextButton", miscScreen)
+        btn.Size = UDim2.new(0,180,0,36)
+        btn.Position = UDim2.new(0,10,0,y)
+        btn.Text = text
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 14
+        btn.BackgroundColor3 = Color3.fromRGB(70,130,240)
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        Instance.new("UICorner", btn)
+        btn.MouseButton1Click:Connect(callback)
+        return btn
     end
+    
+    local y = 10
+    
+    -- Reset character button
+    addMiscButton("Reset Character", y, function()
+        if LocalPlayer.Character then
+            LocalPlayer.Character:BreakJoints()
+        end
+    end)
+    y = y + 46
+    
+    -- Respawn button
+    addMiscButton("Force Respawn", y, function()
+        LocalPlayer:LoadCharacter()
+    end)
+    y = y + 46
+    
+    -- Server hop button
+    addMiscButton("Server Hop", y, function()
+        local TeleportService = game:GetService("TeleportService")
+        TeleportService:Teleport(game.PlaceId)
+    end)
+    y = y + 46
+    
+    -- Toggle invisibility
+    local invisBtn = addMiscButton("Toggle Invisibility", y, function()
+        if LocalPlayer.Character then
+            local char = LocalPlayer.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") or part:IsA("Decal") then
+                        part.Transparency = part.Transparency == 1 and 0 or 1
+                    end
+                end
+                invisBtn.Text = hrp.Transparency == 1 and "Become Visible" or "Toggle Invisibility"
+            end
+        end
+    end)
+    y = y + 46
+    
+    -- Anti AFK
+    local antiAfkBtn = addMiscButton("Enable Anti-AFK", y, function()
+        local afkEnabled = not antiAfkBtn:GetAttribute("enabled")
+        antiAfkBtn:SetAttribute("enabled", afkEnabled)
+        antiAfkBtn.Text = afkEnabled and "Disable Anti-AFK" or "Enable Anti-AFK"
+        antiAfkBtn.BackgroundColor3 = afkEnabled and Color3.fromRGB(80,180,95) or Color3.fromRGB(70,130,240)
+        
+        if afkEnabled then
+            local vInput = game:GetService("VirtualInputManager")
+            spawn(function()
+                while antiAfkBtn:GetAttribute("enabled") do
+                    vInput:SendKeyEvent(true, "W", false, game)
+                    wait(0.1)
+                    vInput:SendKeyEvent(false, "W", false, game)
+                    wait(120) -- Move every 2 minutes
+                end
+            end)
+        end
+    end)
+    antiAfkBtn:SetAttribute("enabled", false)
+    y = y + 46
 
+    -- Settings screen with simplified config system
+    local settingsScreen = screens["Settings"]
+
+    -- Simple theme selection
     local themeLabel = Instance.new("TextLabel", settingsScreen)
     themeLabel.Size = UDim2.new(1,-20,0,20)
     themeLabel.Position = UDim2.new(0,10,0,10)
@@ -326,180 +398,86 @@ local function unlock()
     themeLabel.Font = Enum.Font.Gotham
     themeLabel.TextColor3 = Color3.fromRGB(220,220,220)
 
-    local btnDark = Instance.new("TextButton", settingsScreen)
-    btnDark.Size = UDim2.new(0,100,0,28)
-    btnDark.Position = UDim2.new(0,10,0,40)
-    btnDark.Text = "Dark"
-    Instance.new("UICorner", btnDark)
-    btnDark.MouseButton1Click:Connect(function() applyTheme("dark") end)
+    local function applyTheme(name)
+        local themes = {
+            dark = {main = Color3.fromRGB(28,28,30), header = Color3.fromRGB(20,20,20)},
+            light = {main = Color3.fromRGB(240,240,240), header = Color3.fromRGB(220,220,220)},
+            purple = {main = Color3.fromRGB(60,20,80), header = Color3.fromRGB(40,10,60)}
+        }
+        if themes[name] then
+            window.BackgroundColor3 = themes[name].main
+            header.BackgroundColor3 = themes[name].header
+            LocalPlayer:SetAttribute("NTD_Theme", name)
+        end
+    end
 
-    local btnLight = Instance.new("TextButton", settingsScreen)
-    btnLight.Size = UDim2.new(0,100,0,28)
-    btnLight.Position = UDim2.new(0,120,0,40)
-    btnLight.Text = "Light"
-    Instance.new("UICorner", btnLight)
-    btnLight.MouseButton1Click:Connect(function() applyTheme("light") end)
+    local themeButtons = {"dark", "light", "purple"}
+    for i, themeName in ipairs(themeButtons) do
+        local btn = Instance.new("TextButton", settingsScreen)
+        btn.Size = UDim2.new(0,100,0,28)
+        btn.Position = UDim2.new(0,10 + (i-1)*110,0,40)
+        btn.Text = themeName:sub(1,1):upper() .. themeName:sub(2)
+        Instance.new("UICorner", btn)
+        btn.MouseButton1Click:Connect(function() applyTheme(themeName) end)
+    end
 
-    local btnPurple = Instance.new("TextButton", settingsScreen)
-    btnPurple.Size = UDim2.new(0,100,0,28)
-    btnPurple.Position = UDim2.new(0,230,0,40)
-    btnPurple.Text = "Purple"
-    Instance.new("UICorner", btnPurple)
-    btnPurple.MouseButton1Click:Connect(function() applyTheme("purple") end)
-
-    -- Save/Load config
-    local saveBtn = Instance.new("TextButton", settingsScreen)
-    saveBtn.Size = UDim2.new(0,100,0,28)
-    saveBtn.Position = UDim2.new(0,10,0,80)
-    saveBtn.Text = "Save Config"
-    Instance.new("UICorner", saveBtn)
-    saveBtn.MouseButton1Click:Connect(function()
+    -- Basic config save/load
+    local function saveConfig()
         local cfg = {
             theme = LocalPlayer:GetAttribute("NTD_Theme") or "dark",
             walk = _G.CustomKeyState.desiredWalk,
             jump = _G.CustomKeyState.desiredJump,
-            flyMode = flyMode,
+            flyMode = flyMode
         }
-        local json = HttpService:JSONEncode(cfg)
-        pcall(function() LocalPlayer:SetAttribute("NTD_Config", json) end)
-        feedback.Text = "Config saved"
-    end)
+        LocalPlayer:SetAttribute("NTD_Config", HttpService:JSONEncode(cfg))
+        feedback.Text = "Settings saved"
+    end
 
-    local loadBtn = Instance.new("TextButton", settingsScreen)
-    loadBtn.Size = UDim2.new(0,100,0,28)
-    loadBtn.Position = UDim2.new(0,120,0,80)
-    loadBtn.Text = "Load Config"
-    Instance.new("UICorner", loadBtn)
-    loadBtn.MouseButton1Click:Connect(function()
+    local function loadConfig()
         local json = LocalPlayer:GetAttribute("NTD_Config")
         if json then
             local ok, cfg = pcall(function() return HttpService:JSONDecode(json) end)
             if ok and type(cfg) == "table" then
-                if cfg.theme then applyTheme(cfg.theme) end
-                if cfg.walk then _G.CustomKeyState.desiredWalk = cfg.walk; LocalPlayer:SetAttribute("NTD_WalkSpeed", cfg.walk) end
-                if cfg.jump then _G.CustomKeyState.desiredJump = cfg.jump; LocalPlayer:SetAttribute("NTD_JumpPower", cfg.jump) end
-                if cfg.flyMode then flyMode = cfg.flyMode; flyModeBtn.Text = "Fly Mode: "..flyMode end
-                feedback.Text = "Config loaded"
-            else
-                feedback.Text = "Invalid config"
+                applyTheme(cfg.theme or "dark")
+                _G.CustomKeyState.desiredWalk = cfg.walk or 16
+                _G.CustomKeyState.desiredJump = cfg.jump or 50
+                flyMode = cfg.flyMode or "Velocity"
+                flyModeBtn.Text = "Fly Mode: " .. flyMode
+                LocalPlayer:SetAttribute("NTD_WalkSpeed", _G.CustomKeyState.desiredWalk)
+                LocalPlayer:SetAttribute("NTD_JumpPower", _G.CustomKeyState.desiredJump)
+                feedback.Text = "Settings loaded"
             end
-        else
-            feedback.Text = "No config saved"
-        end
-    end)
-
-    -- Advanced settings: named config save/load/export/import
-    local cfgNameBox = Instance.new("TextBox", settingsScreen)
-    cfgNameBox.Size = UDim2.new(0,200,0,28)
-    cfgNameBox.Position = UDim2.new(0,10,0,120)
-    cfgNameBox.PlaceholderText = "Config name"
-    Instance.new("UICorner", cfgNameBox)
-
-    local saveAsBtn = Instance.new("TextButton", settingsScreen)
-    saveAsBtn.Size = UDim2.new(0,100,0,28)
-    saveAsBtn.Position = UDim2.new(0,220,0,120)
-    saveAsBtn.Text = "Save As"
-    Instance.new("UICorner", saveAsBtn)
-    saveAsBtn.MouseButton1Click:Connect(function()
-        local name = tostring(cfgNameBox.Text or ""):gsub("%s+","")
-        if name == "" then feedback.Text = "Enter a name" return end
-        local storeJson = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
-        local ok, store = pcall(function() return HttpService:JSONDecode(storeJson) end)
-        if not ok or type(store) ~= "table" then store = {} end
-        store[name] = {
-            theme = LocalPlayer:GetAttribute("NTD_Theme") or "dark",
-            walk = _G.CustomKeyState.desiredWalk,
-            jump = _G.CustomKeyState.desiredJump,
-            flyMode = flyMode,
-        }
-        pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(store)) end)
-        feedback.Text = "Saved as "..name
-        refreshConfigList()
-    end)
-
-    local configListFrame = Instance.new("Frame", settingsScreen)
-    configListFrame.Size = UDim2.new(1,-20,0,120)
-    configListFrame.Position = UDim2.new(0,10,0,160)
-    configListFrame.BackgroundTransparency = 1
-
-    local function refreshConfigList()
-        for _,c in pairs(configListFrame:GetChildren()) do if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
-        local storeJson = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
-        local ok, store = pcall(function() return HttpService:JSONDecode(storeJson) end)
-        if not ok or type(store) ~= "table" then store = {} end
-        local y = 0
-        for name, cfg in pairs(store) do
-            local lbl = Instance.new("TextLabel", configListFrame)
-            lbl.Size = UDim2.new(0,220,0,20)
-            lbl.Position = UDim2.new(0,0,0,y)
-            lbl.BackgroundTransparency = 1
-            lbl.Text = name
-            lbl.TextColor3 = Color3.fromRGB(220,220,220)
-            lbl.Font = Enum.Font.Gotham
-
-            local loadB = Instance.new("TextButton", configListFrame)
-            loadB.Size = UDim2.new(0,60,0,20)
-            loadB.Position = UDim2.new(0,230,0,y)
-            loadB.Text = "Load"
-            Instance.new("UICorner", loadB)
-            loadB.MouseButton1Click:Connect(function()
-                if cfg.theme then applyTheme(cfg.theme) end
-                if cfg.walk then _G.CustomKeyState.desiredWalk = cfg.walk; LocalPlayer:SetAttribute("NTD_WalkSpeed", cfg.walk) end
-                if cfg.jump then _G.CustomKeyState.desiredJump = cfg.jump; LocalPlayer:SetAttribute("NTD_JumpPower", cfg.jump) end
-                if cfg.flyMode then flyMode = cfg.flyMode; flyModeBtn.Text = "Fly Mode: "..flyMode end
-                feedback.Text = "Loaded "..name
-            end)
-
-            local delB = Instance.new("TextButton", configListFrame)
-            delB.Size = UDim2.new(0,60,0,20)
-            delB.Position = UDim2.new(0,300,0,y)
-            delB.Text = "Delete"
-            Instance.new("UICorner", delB)
-            delB.MouseButton1Click:Connect(function()
-                store[name] = nil
-                pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(store)) end)
-                refreshConfigList()
-                feedback.Text = "Deleted "..name
-            end)
-
-            y = y + 24
         end
     end
-    refreshConfigList()
 
-    local exportBtn = Instance.new("TextButton", settingsScreen)
-    exportBtn.Size = UDim2.new(0,100,0,28)
-    exportBtn.Position = UDim2.new(0,10,0,290)
-    exportBtn.Text = "Export Store"
-    Instance.new("UICorner", exportBtn)
-    exportBtn.MouseButton1Click:Connect(function()
-        local json = LocalPlayer:GetAttribute("NTD_ConfigStore") or "{}"
-        -- place into clipboard if available
-        pcall(function() setclipboard(json) end)
-        feedback.Text = "Exported to clipboard"
-    end)
+    -- Config buttons
+    local saveBtn = Instance.new("TextButton", settingsScreen)
+    saveBtn.Size = UDim2.new(0,160,0,36)
+    saveBtn.Position = UDim2.new(0,10,0,100)
+    saveBtn.Text = "Save Settings"
+    saveBtn.Font = Enum.Font.GothamBold
+    saveBtn.TextSize = 14
+    saveBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+    Instance.new("UICorner", saveBtn)
+    saveBtn.MouseButton1Click:Connect(saveConfig)
 
-    local importBox = Instance.new("TextBox", settingsScreen)
-    importBox.Size = UDim2.new(0,300,0,28)
-    importBox.Position = UDim2.new(0,120,0,290)
-    importBox.PlaceholderText = "Paste JSON here and press Import"
-    Instance.new("UICorner", importBox)
+    local loadBtn = Instance.new("TextButton", settingsScreen)
+    loadBtn.Size = UDim2.new(0,160,0,36)
+    loadBtn.Position = UDim2.new(0,180,0,100)
+    loadBtn.Text = "Load Settings"
+    loadBtn.Font = Enum.Font.GothamBold
+    loadBtn.TextSize = 14
+    loadBtn.BackgroundColor3 = Color3.fromRGB(70,130,240)
+    Instance.new("UICorner", loadBtn)
+    loadBtn.MouseButton1Click:Connect(loadConfig)
 
-    local importBtn = Instance.new("TextButton", settingsScreen)
-    importBtn.Size = UDim2.new(0,80,0,28)
-    importBtn.Position = UDim2.new(0,430,0,290)
-    importBtn.Text = "Import"
-    Instance.new("UICorner", importBtn)
-    importBtn.MouseButton1Click:Connect(function()
-        local ok, tbl = pcall(function() return HttpService:JSONDecode(importBox.Text or "{}") end)
-        if ok and type(tbl) == "table" then
-            pcall(function() LocalPlayer:SetAttribute("NTD_ConfigStore", HttpService:JSONEncode(tbl)) end)
-            refreshConfigList()
-            feedback.Text = "Imported store"
-        else
-            feedback.Text = "Invalid JSON"
-        end
-    end)
+    -- Add auto-save on close
+    table.insert(connections, screenGui.AncestryChanged:Connect(function(_, parent)
+        if not parent then saveConfig() end
+    end))
+
+    -- Load settings on startup
+    loadConfig()
 
     -- Premium tab UI
     local premiumScreen = screens["Premium"]
@@ -573,6 +551,48 @@ local function unlock()
                 PremiumGUI.Name = "PremiumGUI"
                 PremiumGUI.ResetOnSpawn = false
                 PremiumGUI.Parent = LocalPlayer.PlayerGui
+                
+                -- Create drag control module
+                local DragControl = {}
+                DragControl.smoothness = 0.1
+                DragControl.dragging = false
+                DragControl.currentTween = nil
+                
+                function DragControl.startDrag(frame, dragPoint, inputStart)
+                    DragControl.dragging = true
+                    DragControl.dragStart = inputStart.Position
+                    DragControl.startPos = frame.Position
+                    
+                    if DragControl.currentTween then DragControl.currentTween:Cancel() end
+                    
+                    -- Visual feedback
+                    TweenService:Create(dragPoint, 
+                        TweenInfo.new(0.2), 
+                        {BackgroundColor3 = Color3.fromRGB(40,40,50)}
+                    ):Play()
+                end
+                
+                function DragControl.updateDrag(frame, input)
+                    if not DragControl.dragging then return end
+                    
+                    local delta = input.Position - DragControl.dragStart
+                    local targetPos = DragControl.startPos + UDim2.new(0, delta.X, 0, delta.Y)
+                    
+                    if DragControl.currentTween then DragControl.currentTween:Cancel() end
+                    DragControl.currentTween = TweenService:Create(frame,
+                        TweenInfo.new(DragControl.smoothness, Enum.EasingStyle.Linear),
+                        {Position = targetPos}
+                    )
+                    DragControl.currentTween:Play()
+                end
+                
+                function DragControl.endDrag(dragPoint)
+                    DragControl.dragging = false
+                    TweenService:Create(dragPoint, 
+                        TweenInfo.new(0.2), 
+                        {BackgroundColor3 = Color3.fromRGB(16,16,16)}
+                    ):Play()
+                end
 
                 local pwindow = Instance.new("Frame", PremiumGUI)
                 pwindow.Name = "PremiumWindow"
@@ -669,119 +689,189 @@ local function unlock()
 
                 makePremiumTab("Spawner",1)
                 makePremiumTab("Player",2)
-                makePremiumTab("Combat",3)
-                makePremiumTab("Unfair",4)
-                makePremiumTab("Misc",5)
                 pScreens["Spawner"].Visible = true
 
-                -- fill premium spawner content (reuse blockRemotes)
+                -- Enhanced premium spawner with advanced features
                 local pspawner = pScreens["Spawner"]
                 local pblockRemotes = {"SpawnDiamondBlock","SpawnGalaxyBlock","SpawnLuckyBlock","SpawnRainbowBlock","SpawnSuperBlock"}
-                local py = 10
-                for i, name in ipairs(pblockRemotes) do
-                    local b = Instance.new("TextButton", pspawner)
-                    b.Size = UDim2.new(0,180,0,38)
-                    b.Position = UDim2.new(0,10,0,py)
-                    b.Text = name:gsub("Spawn","")
-                    b.BackgroundColor3 = Color3.fromRGB(80,130,240)
-                    b.TextColor3 = Color3.fromRGB(255,255,255)
-                    Instance.new("UICorner", b)
-                    b.MouseButton1Click:Connect(function()
+                
+                -- Create container for better organization
+                local buttonContainer = Instance.new("ScrollingFrame", pspawner)
+                buttonContainer.Size = UDim2.new(1,-20,1,-20)
+                buttonContainer.Position = UDim2.new(0,10,0,10)
+                buttonContainer.BackgroundTransparency = 1
+                buttonContainer.ScrollBarThickness = 4
+                buttonContainer.ScrollingEnabled = true
+                
+                local UIListLayout = Instance.new("UIListLayout", buttonContainer)
+                UIListLayout.Padding = UDim.new(0,8)
+                UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                
+                -- Spawn All function
+                local function spawnAllItems()
+                    for _, name in ipairs(pblockRemotes) do
                         local remote = ReplicatedStorage:FindFirstChild(name)
                         if remote then
+                            spawn(function()
+                                if remote:IsA("RemoteEvent") then
+                                    pcall(function() remote:FireServer() end)
+                                elseif remote:IsA("RemoteFunction") then
+                                    pcall(function() remote:InvokeServer() end)
+                                end
+                            end)
+                        end
+                    end
+                end
+                
+                -- Create spawn buttons with improved visuals
+                for i, name in ipairs(pblockRemotes) do
+                    local buttonFrame = Instance.new("Frame", buttonContainer)
+                    buttonFrame.Size = UDim2.new(1,0,0,50)
+                    buttonFrame.BackgroundColor3 = Color3.fromRGB(40,40,45)
+                    buttonFrame.LayoutOrder = i
+                    Instance.new("UICorner", buttonFrame)
+                    
+                    local icon = Instance.new("TextLabel", buttonFrame)
+                    icon.Size = UDim2.new(0,40,0,40)
+                    icon.Position = UDim2.new(0,5,0,5)
+                    icon.Text = "🎲"
+                    icon.TextSize = 24
+                    icon.BackgroundTransparency = 1
+                    
+                    local label = Instance.new("TextLabel", buttonFrame)
+                    label.Size = UDim2.new(1,-110,1,0)
+                    label.Position = UDim2.new(0,50,0,0)
+                    label.Text = name:gsub("Spawn","")
+                    label.TextColor3 = Color3.fromRGB(230,230,230)
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 16
+                    label.BackgroundTransparency = 1
+                    label.TextXAlignment = Enum.TextXAlignment.Left
+                    
+                    local spawnBtn = Instance.new("TextButton", buttonFrame)
+                    spawnBtn.Size = UDim2.new(0,45,0,45)
+                    spawnBtn.Position = UDim2.new(1,-50,0,2)
+                    spawnBtn.Text = "✨"
+                    spawnBtn.TextSize = 24
+                    spawnBtn.BackgroundColor3 = Color3.fromRGB(80,130,240)
+                    Instance.new("UICorner", spawnBtn)
+                    
+                    spawnBtn.MouseButton1Click:Connect(function()
+                        local remote = ReplicatedStorage:FindFirstChild(name)
+                        if remote then
+                            -- Visual feedback
+                            TweenService:Create(spawnBtn, 
+                                TweenInfo.new(0.2), 
+                                {BackgroundColor3 = Color3.fromRGB(100,200,100)}
+                            ):Play()
+                            
                             if remote:IsA("RemoteEvent") then
                                 pcall(function() remote:FireServer() end)
                             elseif remote:IsA("RemoteFunction") then
                                 pcall(function() remote:InvokeServer() end)
                             end
+                            
+                            wait(0.2)
+                            TweenService:Create(spawnBtn, 
+                                TweenInfo.new(0.2), 
+                                {BackgroundColor3 = Color3.fromRGB(80,130,240)}
+                            ):Play()
                         end
                     end)
-                    py = py + 46
                 end
-
-                -- adjustable loop spawn controls (interval 0.01 - 2)
-                local intervalLabel = Instance.new("TextLabel", pspawner)
-                intervalLabel.Size = UDim2.new(0,220,0,20)
-                intervalLabel.Position = UDim2.new(0,10,0,py)
-                intervalLabel.BackgroundTransparency = 1
-                intervalLabel.Text = "Loop Interval (s):"
-                intervalLabel.Font = Enum.Font.Gotham
-                intervalLabel.TextSize = 14
-                intervalLabel.TextColor3 = Color3.fromRGB(220,220,220)
-
-                local intervalBox = Instance.new("TextBox", pspawner)
-                intervalBox.Size = UDim2.new(0,80,0,28)
-                intervalBox.Position = UDim2.new(0,140,0,py-2)
-                intervalBox.Text = "0.1"
-                intervalBox.ClearTextOnFocus = false
-                intervalBox.TextSize = 14
-                Instance.new("UICorner", intervalBox)
-
-                local pLoopToggle = Instance.new("TextButton", pspawner)
-                pLoopToggle.Size = UDim2.new(0,120,0,36)
-                pLoopToggle.Position = UDim2.new(0,10,0,py+36)
-                pLoopToggle.Text = "Start Loop"
-                pLoopToggle.Font = Enum.Font.GothamBold
-                pLoopToggle.TextSize = 14
-                pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
-                Instance.new("UICorner", pLoopToggle)
-
-                local pLooping = false
-                local pLoopJob = nil
-
-                local function safeFireSpawn()
-                    local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
-                    if remote then
-                        if remote:IsA("RemoteEvent") then pcall(function() remote:FireServer() end)
-                        elseif remote:IsA("RemoteFunction") then pcall(function() remote:InvokeServer() end) end
-                    end
-                end
-
-                pLoopToggle.MouseButton1Click:Connect(function()
-                    if pLooping then
-                        -- stop the loop
-                        pLooping = false
-                        pLoopToggle.Text = "Start Loop"
-                        pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
-                        return
-                    end
-
-                    -- start the loop safely
-                    pLooping = true
-                    pLoopToggle.Text = "Stop Loop"
-                    pLoopToggle.BackgroundColor3 = Color3.fromRGB(100,200,100)
-
-                    -- ensure only one job runs
-                    if pLoopJob and coroutine.status(pLoopJob) ~= "dead" then
-                        -- already running; just return
-                        return
-                    end
-
-                    pLoopJob = coroutine.create(function()
-                        local stopAfter = tonumber(durationBox.Text) or 0
-                        if stopAfter <= 0 then stopAfter = nil end
-                        local endTime = stopAfter and (tick() + stopAfter) or nil
-                        while pLooping and (not endTime or tick() < endTime) do
-                            local val = tonumber(intervalBox.Text) or 0.1
-                            val = math.clamp(val, 0.01, 2)
-                            safeFireSpawn()
-                            -- wait in small increments so UI stop is responsive
-                            local waited = 0
-                            while waited < val and pLooping do
-                                local step = math.min(0.1, val - waited)
-                                wait(step)
-                                waited = waited + step
+                
+                -- Control panel for advanced spawning
+                local controlPanel = Instance.new("Frame", pspawner)
+                controlPanel.Size = UDim2.new(1,0,0,120)
+                controlPanel.Position = UDim2.new(0,0,1,-130)
+                controlPanel.BackgroundColor3 = Color3.fromRGB(30,30,35)
+                Instance.new("UICorner", controlPanel)
+                
+                local ultraSpawnBtn = Instance.new("TextButton", controlPanel)
+                ultraSpawnBtn.Size = UDim2.new(0.5,-10,0,50)
+                ultraSpawnBtn.Position = UDim2.new(0,5,0,5)
+                ultraSpawnBtn.Text = "🚀 Ultra Spawn"
+                ultraSpawnBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                ultraSpawnBtn.Font = Enum.Font.GothamBold
+                ultraSpawnBtn.TextSize = 16
+                ultraSpawnBtn.BackgroundColor3 = Color3.fromRGB(160,80,220)
+                Instance.new("UICorner", ultraSpawnBtn)
+                
+                local multiSpawnBtn = Instance.new("TextButton", controlPanel)
+                multiSpawnBtn.Size = UDim2.new(0.5,-10,0,50)
+                multiSpawnBtn.Position = UDim2.new(0.5,5,0,5)
+                multiSpawnBtn.Text = "⚡ Multi Spawn"
+                multiSpawnBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                multiSpawnBtn.Font = Enum.Font.GothamBold
+                multiSpawnBtn.TextSize = 16
+                multiSpawnBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+                Instance.new("UICorner", multiSpawnBtn)
+                
+                local spawnCounter = Instance.new("TextLabel", controlPanel)
+                spawnCounter.Size = UDim2.new(1,-10,0,30)
+                spawnCounter.Position = UDim2.new(0,5,1,-35)
+                spawnCounter.Text = "Spawn Count: 0"
+                spawnCounter.TextColor3 = Color3.fromRGB(200,200,200)
+                spawnCounter.Font = Enum.Font.GothamBold
+                spawnCounter.TextSize = 14
+                spawnCounter.BackgroundTransparency = 1
+                
+                local spawnCount = 0
+                local ultraSpawning = false
+                local multiSpawning = false
+                
+                ultraSpawnBtn.MouseButton1Click:Connect(function()
+                    ultraSpawning = not ultraSpawning
+                    ultraSpawnBtn.BackgroundColor3 = ultraSpawning and Color3.fromRGB(200,100,255) or Color3.fromRGB(160,80,220)
+                    ultraSpawnBtn.Text = ultraSpawning and "🛑 Stop Ultra" or "🚀 Ultra Spawn"
+                    
+                    if ultraSpawning then
+                        spawn(function()
+                            while ultraSpawning do
+                                spawnAllItems()
+                                spawnCount = spawnCount + #pblockRemotes
+                                spawnCounter.Text = "Spawn Count: "..spawnCount
+                                wait(0.01)
                             end
-                        end
-                        pLooping = false
-                        -- update UI back on main thread
-                        pcall(function()
-                            pLoopToggle.Text = "Start Loop"
-                            pLoopToggle.BackgroundColor3 = Color3.fromRGB(180,90,220)
                         end)
-                    end)
-                    coroutine.resume(pLoopJob)
+                    end
                 end)
+                
+                multiSpawnBtn.MouseButton1Click:Connect(function()
+                    multiSpawning = not multiSpawning
+                    multiSpawnBtn.BackgroundColor3 = multiSpawning and Color3.fromRGB(100,200,115) or Color3.fromRGB(80,180,95)
+                    multiSpawnBtn.Text = multiSpawning and "🛑 Stop Multi" or "⚡ Multi Spawn"
+                    
+                    if multiSpawning then
+                        spawn(function()
+                            local endTime = tick() + 10
+                            while multiSpawning and tick() < endTime do
+                                for _, name in ipairs(pblockRemotes) do
+                                    local remote = ReplicatedStorage:FindFirstChild(name)
+                                    if remote then
+                                        spawn(function()
+                                            if remote:IsA("RemoteEvent") then
+                                                pcall(function() remote:FireServer() end)
+                                            elseif remote:IsA("RemoteFunction") then
+                                                pcall(function() remote:InvokeServer() end)
+                                            end
+                                        end)
+                                        spawnCount = spawnCount + 1
+                                        spawnCounter.Text = "Spawn Count: "..spawnCount
+                                    end
+                                end
+                                wait(0.05)
+                            end
+                            multiSpawning = false
+                            multiSpawnBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+                            multiSpawnBtn.Text = "⚡ Multi Spawn"
+                        end)
+                    end
+                end)
+
+                -- No loop controls in premium GUI since they are in regular GUI now
+
+                -- Loop functionality removed and moved to regular GUI
 
                 -- duration selection (text or slider)
                 local modeLabel = Instance.new("TextLabel", pspawner)
@@ -871,53 +961,288 @@ local function unlock()
                 end)
                 py = py + 120
 
-                -- player tab: small sliders for Walk/Jump
+                -- Enhanced player tab with modern sliders and more options
                 local pplayer = pScreens["Player"]
-                local function addSmallSlider(parent, text, min, max, default, y)
-                    local lab = Instance.new("TextLabel", parent)
-                    lab.Size = UDim2.new(1,-20,0,20)
-                    lab.Position = UDim2.new(0,10,0,y)
-                    lab.BackgroundTransparency = 1
-                    lab.Text = text
-                    lab.Font = Enum.Font.Gotham
-                    lab.TextColor3 = Color3.fromRGB(220,220,220)
-
-                    local s = Instance.new("TextBox", parent)
-                    s.Size = UDim2.new(0,120,0,28)
-                    s.Position = UDim2.new(0,10,0,y+24)
-                    s.Text = tostring(default)
-                    Instance.new("UICorner", s)
-                    return s
+                
+                local function createModernSlider(parent, text, min, max, default, callback, y)
+                    local container = Instance.new("Frame", parent)
+                    container.Size = UDim2.new(1,-20,0,60)
+                    container.Position = UDim2.new(0,10,0,y)
+                    container.BackgroundTransparency = 1
+                    
+                    local label = Instance.new("TextLabel", container)
+                    label.Size = UDim2.new(1,-80,0,20)
+                    label.Position = UDim2.new(0,0,0,0)
+                    label.BackgroundTransparency = 1
+                    label.Text = text..": "..default
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 14
+                    label.TextColor3 = Color3.fromRGB(220,220,220)
+                    label.TextXAlignment = Enum.TextXAlignment.Left
+                    
+                    local sliderBg = Instance.new("Frame", container)
+                    sliderBg.Size = UDim2.new(1,0,0,6)
+                    sliderBg.Position = UDim2.new(0,0,0,30)
+                    sliderBg.BackgroundColor3 = Color3.fromRGB(40,40,45)
+                    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1,0)
+                    
+                    local fill = Instance.new("Frame", sliderBg)
+                    fill.Size = UDim2.new((default-min)/(max-min),0,1,0)
+                    fill.BackgroundColor3 = Color3.fromRGB(100,150,255)
+                    Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+                    
+                    local valueBox = Instance.new("TextBox", container)
+                    valueBox.Size = UDim2.new(0,60,0,24)
+                    valueBox.Position = UDim2.new(1,-60,0,0)
+                    valueBox.BackgroundColor3 = Color3.fromRGB(50,50,55)
+                    valueBox.Text = tostring(default)
+                    valueBox.TextColor3 = Color3.fromRGB(255,255,255)
+                    valueBox.Font = Enum.Font.GothamBold
+                    valueBox.TextSize = 14
+                    Instance.new("UICorner", valueBox)
+                    
+                    local dragging = false
+                    sliderBg.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            dragging = true
+                            local rel = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X)/sliderBg.AbsoluteSize.X, 0, 1)
+                            local val = math.floor(min + (max-min)*rel)
+                            fill.Size = UDim2.new(rel,0,1,0)
+                            valueBox.Text = tostring(val)
+                            label.Text = text..": "..val
+                            if callback then callback(val) end
+                        end
+                    end)
+                    
+                    UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            dragging = false
+                        end
+                    end)
+                    
+                    UserInputService.InputChanged:Connect(function(input)
+                        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                            local rel = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X)/sliderBg.AbsoluteSize.X, 0, 1)
+                            local val = math.floor(min + (max-min)*rel)
+                            fill.Size = UDim2.new(rel,0,1,0)
+                            valueBox.Text = tostring(val)
+                            label.Text = text..": "..val
+                            if callback then callback(val) end
+                        end
+                    end)
+                    
+                    valueBox.FocusLost:Connect(function(enterPressed)
+                        local val = tonumber(valueBox.Text) or default
+                        val = math.clamp(val, min, max)
+                        local rel = (val-min)/(max-min)
+                        fill.Size = UDim2.new(rel,0,1,0)
+                        valueBox.Text = tostring(val)
+                        label.Text = text..": "..val
+                        if callback then callback(val) end
+                    end)
+                    
+                    return valueBox
                 end
-
-                local walkBox = addSmallSlider(pplayer, "WalkSpeed", 16, 200, _G.CustomKeyState.desiredWalk, 10)
-                local jumpBox = addSmallSlider(pplayer, "JumpPower", 50, 300, _G.CustomKeyState.desiredJump, 80)
-
+                    
+                    local label = Instance.new("TextLabel", container)
+                    label.Size = UDim2.new(1,-80,0,20)
+                    label.Position = UDim2.new(0,0,0,0)
+                    label.BackgroundTransparency = 1
+                    label.Text = text..": "..default
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 14
+                    label.TextColor3 = Color3.fromRGB(220,220,220)
+                    label.TextXAlignment = Enum.TextXAlignment.Left
+                    
+                    local sliderBg = Instance.new("Frame", container)
+                    sliderBg.Size = UDim2.new(1,0,0,6)
+                    sliderBg.Position = UDim2.new(0,0,0,30)
+                    sliderBg.BackgroundColor3 = Color3.fromRGB(40,40,45)
+                    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1,0)
+                    
+                    local fill = Instance.new("Frame", sliderBg)
+                    fill.Size = UDim2.new((default-min)/(max-min),0,1,0)
+                    fill.BackgroundColor3 = Color3.fromRGB(100,150,255)
+                    Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+                    
+                    local valueBox = Instance.new("TextBox", container)
+                    valueBox.Size = UDim2.new(0,60,0,24)
+                    valueBox.Position = UDim2.new(1,-60,0,0)
+                    valueBox.BackgroundColor3 = Color3.fromRGB(50,50,55)
+                    valueBox.Text = tostring(default)
+                    valueBox.TextColor3 = Color3.fromRGB(255,255,255)
+                    valueBox.Font = Enum.Font.GothamBold
+                    valueBox.TextSize = 14
+                    Instance.new("UICorner", valueBox)
+                    
+                    local dragging = false
+                    sliderBg.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            dragging = true
+                            local rel = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X)/sliderBg.AbsoluteSize.X, 0, 1)
+                            local val = math.floor(min + (max-min)*rel)
+                            fill.Size = UDim2.new(rel,0,1,0)
+                            valueBox.Text = tostring(val)
+                            label.Text = text..": "..val
+                        end
+                    end)
+                    
+                    UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                            dragging = false
+                        end
+                    end)
+                    
+                    UserInputService.InputChanged:Connect(function(input)
+                        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                            local rel = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X)/sliderBg.AbsoluteSize.X, 0, 1)
+                            local val = math.floor(min + (max-min)*rel)
+                            fill.Size = UDim2.new(rel,0,1,0)
+                            valueBox.Text = tostring(val)
+                            label.Text = text..": "..val
+                        end
+                    end)
+                    
+                    valueBox.FocusLost:Connect(function(enterPressed)
+                        local val = tonumber(valueBox.Text) or default
+                        val = math.clamp(val, min, max)
+                        local rel = (val-min)/(max-min)
+                        fill.Size = UDim2.new(rel,0,1,0)
+                        valueBox.Text = tostring(val)
+                        label.Text = text..": "..val
+                    end)
+                    
+                    return valueBox
+                end
+                
+                local walkSpeed = createModernSlider(pplayer, "WalkSpeed", 16, 500, _G.CustomKeyState.desiredWalk, 10)
+                local jumpPower = createModernSlider(pplayer, "JumpPower", 50, 500, _G.CustomKeyState.desiredJump, 80)
+                local hipHeight = createModernSlider(pplayer, "Hip Height", 0, 100, LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") and LocalPlayer.Character.Humanoid.HipHeight or 2, 150)
+                
                 local applyBtn = Instance.new("TextButton", pplayer)
-                applyBtn.Size = UDim2.new(0,120,0,34)
-                applyBtn.Position = UDim2.new(0,10,0,140)
-                applyBtn.Text = "Apply"
+                applyBtn.Size = UDim2.new(0,160,0,40)
+                applyBtn.Position = UDim2.new(0,10,0,220)
+                applyBtn.Text = "Apply Changes"
+                applyBtn.Font = Enum.Font.GothamBold
+                applyBtn.TextSize = 16
+                applyBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+                applyBtn.TextColor3 = Color3.fromRGB(255,255,255)
                 Instance.new("UICorner", applyBtn)
-                applyBtn.TextSize = 14
+                
                 applyBtn.MouseButton1Click:Connect(function()
-                    local w = tonumber(walkBox.Text) or _G.CustomKeyState.desiredWalk
-                    local j = tonumber(jumpBox.Text) or _G.CustomKeyState.desiredJump
+                    local w = tonumber(walkSpeed.Text) or _G.CustomKeyState.desiredWalk
+                    local j = tonumber(jumpPower.Text) or _G.CustomKeyState.desiredJump
+                    local h = tonumber(hipHeight.Text) or 2
+                    
                     _G.CustomKeyState.desiredWalk = w
                     _G.CustomKeyState.desiredJump = j
                     LocalPlayer:SetAttribute("NTD_WalkSpeed", w)
                     LocalPlayer:SetAttribute("NTD_JumpPower", j)
+                    
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                         hum.WalkSpeed = w
                         hum.JumpPower = j
+                        hum.HipHeight = h
                     end
-                    feedback.Text = "Applied"
+                    
+                    feedback.Text = "Settings applied!"
+                end)
+                
+                -- Toggle noclip
+                local noclipBtn = Instance.new("TextButton", pplayer)
+                noclipBtn.Size = UDim2.new(0,160,0,40)
+                noclipBtn.Position = UDim2.new(0,180,0,220)
+                noclipBtn.Text = "Toggle Noclip"
+                noclipBtn.Font = Enum.Font.GothamBold
+                noclipBtn.TextSize = 16
+                noclipBtn.BackgroundColor3 = Color3.fromRGB(70,130,240)
+                noclipBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                Instance.new("UICorner", noclipBtn)
+                
+                local noclipEnabled = false
+                local noclipConnection
+                
+                noclipBtn.MouseButton1Click:Connect(function()
+                    noclipEnabled = not noclipEnabled
+                    noclipBtn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(80,180,95) or Color3.fromRGB(70,130,240)
+                    noclipBtn.Text = noclipEnabled and "Disable Noclip" or "Toggle Noclip"
+                    
+                    if noclipEnabled then
+                        noclipConnection = RunService.Stepped:Connect(function()
+                            if LocalPlayer.Character then
+                                for _,part in pairs(LocalPlayer.Character:GetDescendants()) do
+                                    if part:IsA("BasePart") then
+                                        part.CanCollide = false
+                                    end
+                                end
+                            end
+                        end)
+                    else
+                        if noclipConnection then
+                            noclipConnection:Disconnect()
+                            noclipConnection = nil
+                        end
+                        if LocalPlayer.Character then
+                            for _,part in pairs(LocalPlayer.Character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = true
+                                end
+                            end
+                        end
+                    end
                 end)
 
-                -- drag support for pwindow (mouse and touch)
+                -- Enhanced drag support with tweening
                 local pDragging = false
                 local pDragStart = Vector2.new()
                 local pStartPos = pwindow.Position
+                local pDragTweenSpeed = 0.12 -- Adjustable tween speed
+                local currentPDragTween
+                
+                -- Enhanced drag controls with visual feedback
+                local currentDragTween
+                local pDragSmoothness = 0.1
+                
+                -- Drag controls container
+                local dragControls = Instance.new("Frame", pheader)
+                dragControls.Size = UDim2.new(0, 300, 1, 0)
+                dragControls.Position = UDim2.new(0.5, -150, 0, 0)
+                dragControls.BackgroundTransparency = 1
+
+                local smoothnessLabel = Instance.new("TextLabel", dragControls)
+                smoothnessLabel.Size = UDim2.new(0, 120, 1, 0)
+                smoothnessLabel.Position = UDim2.new(0, 0, 0, 0)
+                smoothnessLabel.BackgroundTransparency = 1
+                smoothnessLabel.Text = "Drag Smoothness:"
+                smoothnessLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                smoothnessLabel.Font = Enum.Font.GothamBold
+                smoothnessLabel.TextSize = 14
+                
+                local dragSpeedSlider = Instance.new("Frame", pheader)
+                dragSpeedSlider.Size = UDim2.new(0,100,0,4)
+                dragSpeedSlider.Position = UDim2.new(0.5,-50,0.5,-2)
+                dragSpeedSlider.BackgroundColor3 = Color3.fromRGB(60,60,60)
+                Instance.new("UICorner", dragSpeedSlider).CornerRadius = UDim.new(1,0)
+                
+                local dragSpeedFill = Instance.new("Frame", dragSpeedSlider)
+                dragSpeedFill.Size = UDim2.new(pDragTweenSpeed/0.3,0,1,0)
+                dragSpeedFill.BackgroundColor3 = Color3.fromRGB(100,150,255)
+                Instance.new("UICorner", dragSpeedFill).CornerRadius = UDim.new(1,0)
+                
+                local dragSpeedHit = Instance.new("TextButton", dragSpeedSlider)
+                dragSpeedHit.Size = UDim2.new(1,0,1,8)
+                dragSpeedHit.Position = UDim2.new(0,0,0,-4)
+                dragSpeedHit.BackgroundTransparency = 1
+                dragSpeedHit.Text = ""
+                
+                dragSpeedHit.MouseButton1Down:Connect(function(inputX)
+                    local rel = math.clamp((inputX - dragSpeedSlider.AbsolutePosition.X)/dragSpeedSlider.AbsoluteSize.X, 0, 1)
+                    pDragTweenSpeed = rel * 0.3
+                    dragSpeedFill.Size = UDim2.new(rel,0,1,0)
+                    dragSpeedLabel.Text = "Drag Speed: "..string.format("%.2f", pDragTweenSpeed)
+                end)
+
                 pheader.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         pDragging = true
@@ -928,10 +1253,54 @@ local function unlock()
                         end)
                     end
                 end)
+                
                 table.insert(connections, UserInputService.InputChanged:Connect(function(input)
                     if pDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                         local delta = input.Position - pDragStart
-                        pwindow.Position = pStartPos + UDim2.new(0, delta.X, 0, delta.Y)
+                        local targetPos = pStartPos + UDim2.new(0, delta.X, 0, delta.Y)
+                        
+                        if currentPDragTween then currentPDragTween:Cancel() end
+                        currentPDragTween = TweenService:Create(pwindow, 
+                            TweenInfo.new(pDragTweenSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {Position = targetPos}
+                        )
+                        currentPDragTween:Play()
+                    end
+                end))
+                
+                -- Add drag handle for bottom-right corner
+                local pDragHandle = Instance.new("TextButton", pwindow)
+                pDragHandle.Size = UDim2.new(0,24,0,24)
+                pDragHandle.Position = UDim2.new(1,-24,1,-24)
+                pDragHandle.Text = "⇲"
+                pDragHandle.TextColor3 = Color3.fromRGB(180,180,180)
+                pDragHandle.BackgroundTransparency = 0.5
+                pDragHandle.BackgroundColor3 = Color3.fromRGB(40,40,45)
+                pDragHandle.Font = Enum.Font.GothamBold
+                pDragHandle.TextSize = 16
+                Instance.new("UICorner", pDragHandle)
+                
+                local resizing = false
+                local startSize
+                
+                pDragHandle.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        resizing = true
+                        startSize = pwindow.Size
+                        pDragStart = input.Position
+                        input.Changed:Connect(function()
+                            if input.UserInputState == Enum.UserInputState.End then resizing = false end
+                        end)
+                    end
+                end)
+                
+                table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+                    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        local delta = input.Position - pDragStart
+                        local newSize = startSize + UDim2.new(0, delta.X, 0, delta.Y)
+                        -- Clamp minimum size
+                        newSize = UDim2.new(0, math.max(400, newSize.X.Offset), 0, math.max(300, newSize.Y.Offset))
+                        pwindow.Size = newSize
                     end
                 end))
 
@@ -1176,6 +1545,83 @@ local function unlock()
                     for _,e in ipairs(extras) do if not table.find(names,e) then table.insert(names,e) end end
                     return names
                 end
+                
+                -- Add Give All Tools button
+                local getAllBtn = Instance.new("TextButton", pspawner)
+                getAllBtn.Size = UDim2.new(0,200,0,40)
+                getAllBtn.Position = UDim2.new(0,10,0,py + 10)
+                getAllBtn.Text = "Give All Tools"
+                getAllBtn.Font = Enum.Font.GothamBold
+                getAllBtn.TextSize = 16
+                getAllBtn.BackgroundColor3 = Color3.fromRGB(70,180,95)
+                getAllBtn.TextColor3 = Color3.fromRGB(255,255,255)
+                Instance.new("UICorner", getAllBtn)
+                
+                getAllBtn.MouseButton1Click:Connect(function()
+                    local names = getAllToolNames()
+                    local given = 0
+                    for _, name in ipairs(names) do
+                        -- Try to give each tool
+                        local success = false
+                        
+                        -- Direct tool objects
+                        local tool = ReplicatedStorage:FindFirstChild(name)
+                        if tool and tool:IsA("Tool") then
+                            success = pcall(function()
+                                tool:Clone().Parent = LocalPlayer.Backpack
+                            end)
+                        end
+                        
+                        -- Try to wrap parts/models as tools
+                        if not success and tool and (tool:IsA("BasePart") or tool:IsA("Model")) then
+                            success = pcall(function()
+                                local t = Instance.new("Tool")
+                                t.Name = tool.Name
+                                local handle
+                                if tool:IsA("BasePart") then
+                                    handle = tool:Clone()
+                                    handle.Name = "Handle"
+                                else
+                                    local candidate = tool:FindFirstChild("Handle") or tool.PrimaryPart or tool:FindFirstChildWhichIsA("BasePart")
+                                    if candidate then
+                                        handle = candidate:Clone()
+                                        handle.Name = "Handle"
+                                    else
+                                        handle = Instance.new("Part")
+                                        handle.Size = Vector3.new(1,1,1)
+                                        handle.Name = "Handle"
+                                    end
+                                end
+                                handle.CanCollide = false
+                                handle.Anchored = false
+                                handle.Parent = t
+                                t.Parent = LocalPlayer.Backpack
+                            end)
+                        end
+                        
+                        -- Try common remote events
+                        if not success then
+                            local remotes = {"GiveTool", "GiveItem", "RequestItem", "Give"}
+                            for _, remoteName in ipairs(remotes) do
+                                local remote = ReplicatedStorage:FindFirstChild(remoteName)
+                                if remote then
+                                    if remote:IsA("RemoteEvent") then
+                                        pcall(function() remote:FireServer(name) end)
+                                        success = true
+                                    elseif remote:IsA("RemoteFunction") then
+                                        pcall(function() remote:InvokeServer(name) end)
+                                        success = true
+                                    end
+                                    if success then break end
+                                end
+                            end
+                        end
+                        
+                        if success then given = given + 1 end
+                    end
+                    
+                    feedback.Text = "Given " .. given .. " tools"
+                end)
 
                 local allNames = getAllToolNames()
                 searchBox.Changed:Connect(function(prop)
@@ -1553,10 +1999,17 @@ end)
     infoLabel.TextSize = 14
     infoLabel.TextColor3 = Color3.fromRGB(200,200,200)
 
+    -- Create spawner container
+    local spawnerContainer = Instance.new("Frame", spawnerTab)
+    spawnerContainer.Size = UDim2.new(1,-20,0,280)
+    spawnerContainer.Position = UDim2.new(0,10,0,40)
+    spawnerContainer.BackgroundTransparency = 1
+    
+    -- Regular spawn buttons
     for i, remoteName in ipairs(blockRemotes) do
-        local spawnBtn = Instance.new("TextButton", spawnerTab)
+        local spawnBtn = Instance.new("TextButton", spawnerContainer)
         spawnBtn.Size = UDim2.new(0,160,0,32)
-        spawnBtn.Position = UDim2.new(0,10,0,40 + (i-1)*42)
+        spawnBtn.Position = UDim2.new(0,0,0,(i-1)*42)
         spawnBtn.BackgroundColor3 = Color3.fromRGB(70,130,240)
         spawnBtn.TextColor3 = Color3.fromRGB(255,255,255)
         spawnBtn.Text = remoteName:gsub("Spawn","")
@@ -1584,47 +2037,82 @@ end)
             debounce = false
         end)
     end
-
-    -- Loop spawn Lucky Blocks for 10s button (fires SpawnLuckyBlock repeatedly)
-    local loopBtn = Instance.new("TextButton", spawnerTab)
-    loopBtn.Size = UDim2.new(0,200,0,32)
-    loopBtn.Position = UDim2.new(0,10,0,40 + (#blockRemotes)*42)
-    loopBtn.BackgroundColor3 = Color3.fromRGB(180,90,220)
-    loopBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    loopBtn.Text = "Loop Lucky (10s)"
-    Instance.new("UICorner", loopBtn)
+    
+    -- Add loop and ultra spawn buttons
+    local spawnLoopBtn = Instance.new("TextButton", spawnerContainer)
+    spawnLoopBtn.Size = UDim2.new(0,160,0,36)
+    spawnLoopBtn.Position = UDim2.new(0,0,0,220)
+    spawnLoopBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+    spawnLoopBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    spawnLoopBtn.Text = "Start 10s Loop (0.01s)"
+    spawnLoopBtn.Font = Enum.Font.GothamBold
+    spawnLoopBtn.TextSize = 14
+    Instance.new("UICorner", spawnLoopBtn)
 
     local looping = false
-    loopBtn.MouseButton1Click:Connect(function()
-        if looping then return end
-        looping = true
-        local originalText = loopBtn.Text
-        loopBtn.Text = "Looping..."
-        local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
-        if not remote then
-            loopBtn.Text = "Remote missing"
-            wait(1.2)
-            loopBtn.Text = originalText
+    local loopJob
+    spawnLoopBtn.MouseButton1Click:Connect(function()
+        if looping then
             looping = false
+            spawnLoopBtn.Text = "Start 10s Loop (0.01s)"
+            spawnLoopBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
             return
         end
 
-        local stopTime = tick() + 10 -- 10 seconds from now
-        while tick() < stopTime do
-            -- call remote for yourself
-            if remote:IsA("RemoteEvent") then
-                pcall(function() remote:FireServer() end)
-            elseif remote:IsA("RemoteFunction") then
-                pcall(function() remote:InvokeServer() end)
+        looping = true
+        spawnLoopBtn.Text = "Cancel Loop..."
+        spawnLoopBtn.BackgroundColor3 = Color3.fromRGB(180,80,95)
+        
+        local endTime = tick() + 10
+        spawn(function()
+            while tick() < endTime and looping do
+                local remote = ReplicatedStorage:FindFirstChild("SpawnLuckyBlock")
+                if remote then
+                    if remote:IsA("RemoteEvent") then
+                        pcall(function() remote:FireServer() end)
+                    elseif remote:IsA("RemoteFunction") then
+                        pcall(function() remote:InvokeServer() end)
+                    end
+                end
+                wait(0.01) -- Spawn every 0.01 seconds
             end
-            wait() -- approx spawn every 0.45s (adjustable)
-        end
-
-        loopBtn.Text = "Done (10s)"
-        wait(0.9)
-        loopBtn.Text = originalText
-        looping = false
+            looping = false
+            spawnLoopBtn.Text = "Start 10s Loop (0.01s)"
+            spawnLoopBtn.BackgroundColor3 = Color3.fromRGB(80,180,95)
+        end)
     end)
+    
+    local ultraSpawnBtn = Instance.new("TextButton", spawnerContainer)
+    ultraSpawnBtn.Size = UDim2.new(0,160,0,36) 
+    ultraSpawnBtn.Position = UDim2.new(0,0,0,264)
+    ultraSpawnBtn.BackgroundColor3 = Color3.fromRGB(160,80,220)
+    ultraSpawnBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    ultraSpawnBtn.Text = "💥 Ultra Rapid Spawn"
+    ultraSpawnBtn.Font = Enum.Font.GothamBold
+    ultraSpawnBtn.TextSize = 14
+    Instance.new("UICorner", ultraSpawnBtn)
+    
+    ultraSpawnBtn.MouseButton1Click:Connect(function()
+        -- Fire all remotes rapidly for 2 seconds
+        local startTime = tick()
+        while tick() - startTime < 2 do
+            for _, remoteName in ipairs(blockRemotes) do
+                local remote = ReplicatedStorage:FindFirstChild(remoteName)
+                if remote then
+                    spawn(function()
+                        if remote:IsA("RemoteEvent") then
+                            pcall(function() remote:FireServer() end)
+                        elseif remote:IsA("RemoteFunction") then
+                            pcall(function() remote:InvokeServer() end)
+                        end
+                    end)
+                end
+            end
+            wait(0.01) -- Small delay to prevent total freeze
+        end
+    end)
+
+
 
     -- --- PLAYER TAB ---
     local playerTab = screens["Player"]
@@ -2011,9 +2499,37 @@ end
 submit.MouseButton1Click:Connect(function()
     local val = inputBox.Text or ""
     if table.find(ALLOWED_KEYS,val) then
+        feedback.Text = "Key accepted! Unlocking GUI..."
+        wait(0.2)
+        -- Clean up initial UI
+        modal:Destroy()
+        overlay:Destroy()
+        -- Show the main GUI
         unlock()
     else
         feedback.Text = "Invalid key!"
+        task.wait(1)
+        feedback.Text = ""
+    end
+end)
+
+-- Also allow Enter key to submit
+inputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local val = inputBox.Text or ""
+        if table.find(ALLOWED_KEYS,val) then
+            feedback.Text = "Key accepted! Unlocking GUI..."
+            wait(0.2)
+            -- Clean up initial UI
+            modal:Destroy()
+            overlay:Destroy()
+            -- Show the main GUI
+            unlock()
+        else
+            feedback.Text = "Invalid key!"
+            task.wait(1)
+            feedback.Text = ""
+        end
     end
 end)
 
@@ -2022,9 +2538,13 @@ copyBtn.MouseButton1Click:Connect(function()
         setclipboard("https://discord.gg/jGPXgGp6")
     end)
     feedback.Text = success and "Discord link copied!" or "Failed to copy link."
+    if success then
+        task.wait(1)
+        feedback.Text = ""
+    end
 end)
 
-    -- Mobile support: toggle button + touch drag handlers
+        -- Simple mobile toggle button for UI scaling
     local mobileToggle = Instance.new("TextButton", screenGui)
     mobileToggle.Name = "MobileToggle"
     mobileToggle.Size = UDim2.new(0,48,0,48)
@@ -2036,27 +2556,143 @@ end)
     mobileToggle.Font = Enum.Font.GothamBold
     mobileToggle.TextSize = 14
     Instance.new("UICorner", mobileToggle)
-
+    
     local mobileMode = false
-
-    -- Helper to apply mobile-friendly sizing when enabled
+    
+    -- Simplified mobile mode function
     local function applyMobileMode(enabled)
         mobileMode = enabled
         mobileToggle.Text = enabled and "M:ON" or "M:OFF"
-        -- enlarge tab buttons for easier touch
-        for _, child in pairs(left:GetChildren()) do
-            if child:IsA("TextButton") then
-                if enabled then
-                    child.Size = UDim2.new(1,-10,0,56)
-                    child.TextSize = 16
-                else
+        mobileToggle.BackgroundColor3 = enabled and Color3.fromRGB(80,180,95) or Color3.fromRGB(90,90,100)
+        
+        -- Adjust main GUI sizes for mobile
+        if enabled then
+            window.Size = UDim2.new(0.8, 0, 0.6, 0) -- Responsive sizing
+            window.Position = UDim2.new(0.5, 0, 0.5, 0)
+            window.AnchorPoint = Vector2.new(0.5, 0.5)
+            
+            for _, child in pairs(left:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.Size = UDim2.new(1,-20,0,50) -- Bigger touch targets
+                    child.TextSize = 18
+                end
+            end
+            header.Size = UDim2.new(1,0,0,50)
+            headerTitle.TextSize = 20
+            
+            -- Adjust all buttons in content area for touch
+            for _, screen in pairs(screens) do
+                for _, obj in pairs(screen:GetDescendants()) do
+                    if obj:IsA("TextButton") then
+                        obj.Size = UDim2.new(0,180,0,45) -- Bigger buttons
+                        obj.TextSize = 16
+                    elseif obj:IsA("TextBox") then
+                        obj.Size = UDim2.new(0,180,0,40) -- Bigger input boxes
+                        obj.TextSize = 16
+                    end
+                end
+            end
+            
+            -- Adjust premium GUI if it exists
+            if PremiumGUI and PremiumGUI.Parent then
+                local pwindow = PremiumGUI:FindFirstChild("PremiumWindow")
+                if pwindow then
+                    pwindow.Size = UDim2.new(0.85, 0, 0.7, 0)
+                    pwindow.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    pwindow.AnchorPoint = Vector2.new(0.5, 0.5)
+                    
+                    -- Adjust premium GUI elements
+                    for _, obj in pairs(pwindow:GetDescendants()) do
+                        if obj:IsA("TextButton") then
+                            if obj.Parent and obj.Parent.Name ~= "PremiumToggleButton" then
+                                obj.Size = UDim2.new(0,200,0,50)
+                                obj.TextSize = 18
+                            end
+                        elseif obj:IsA("TextBox") then
+                            obj.Size = UDim2.new(0,200,0,45)
+                            obj.TextSize = 18
+                        end
+                    end
+                end
+            end
+            
+            -- Adjust toggle buttons position and size
+            toggleBtn.Size = UDim2.new(0,70,0,70)
+            toggleBtn.Position = UDim2.new(1,-85,1,-85)
+            toggleBtn.TextSize = 18
+            
+            if premToggleBtn then
+                premToggleBtn.Size = UDim2.new(0,70,0,70)
+                premToggleBtn.Position = UDim2.new(1,-165,1,-85)
+                premToggleBtn.TextSize = 18
+            end
+            
+            mobileToggle.Size = UDim2.new(0,70,0,70)
+            mobileToggle.Position = UDim2.new(1,-85,1,-165)
+            mobileToggle.TextSize = 18
+        else
+            -- Reset to desktop sizes
+            window.Size = UDim2.new(0, 600, 0, 400)
+            window.Position = UDim2.new(0.5, -300, 0.5, -200)
+            
+            for _, child in pairs(left:GetChildren()) do
+                if child:IsA("TextButton") then
                     child.Size = UDim2.new(1,-10,0,36)
                     child.TextSize = 14
                 end
             end
+            header.Size = UDim2.new(1,0,0,40)
+            headerTitle.TextSize = 18
+            
+            -- Reset content area
+            for _, screen in pairs(screens) do
+                for _, obj in pairs(screen:GetDescendants()) do
+                    if obj:IsA("TextButton") then
+                        obj.Size = UDim2.new(0,160,0,32)
+                        obj.TextSize = 14
+                    elseif obj:IsA("TextBox") then
+                        obj.Size = UDim2.new(0,160,0,28)
+                        obj.TextSize = 14
+                    end
+                end
+            end
+            
+            -- Reset premium GUI
+            if PremiumGUI and PremiumGUI.Parent then
+                local pwindow = PremiumGUI:FindFirstChild("PremiumWindow")
+                if pwindow then
+                    pwindow.Size = UDim2.new(0, 700, 0, 480)
+                    pwindow.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    
+                    for _, obj in pairs(pwindow:GetDescendants()) do
+                        if obj:IsA("TextButton") then
+                            if obj.Parent and obj.Parent.Name ~= "PremiumToggleButton" then
+                                obj.Size = UDim2.new(0,160,0,36)
+                                obj.TextSize = 14
+                            end
+                        elseif obj:IsA("TextBox") then
+                            obj.Size = UDim2.new(0,160,0,32)
+                            obj.TextSize = 14
+                        end
+                    end
+                end
+            end
+            
+            -- Reset toggle buttons
+            toggleBtn.Size = UDim2.new(0,56,0,56)
+            toggleBtn.Position = UDim2.new(1,-72,1,-140)
+            toggleBtn.TextSize = 14
+            
+            if premToggleBtn then
+                premToggleBtn.Size = UDim2.new(0,56,0,56)
+                premToggleBtn.Position = UDim2.new(1,-140,1,-140)
+                premToggleBtn.TextSize = 14
+            end
+            
+            mobileToggle.Size = UDim2.new(0,48,0,48)
+            mobileToggle.Position = UDim2.new(1,-60,1,-60)
+            mobileToggle.TextSize = 14
         end
-        -- increase header height slightly for touch targets
-        header.Size = enabled and UDim2.new(1,0,0,56) or UDim2.new(1,0,0,40)
     end
 
     mobileToggle.MouseButton1Click:Connect(function()
