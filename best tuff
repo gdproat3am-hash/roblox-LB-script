@@ -1,414 +1,308 @@
--- LocalScript: StageTPGui (mobile-friendly, persistent, auto-cleanup)
--- Put this in StarterGui
+--[[ 
+    Player Control GUI + Smooth Orbit + Click TP + Speed + Bomb + Noclip Orbit
+    Keybinds:
+    E = Teleport to nearest player
+    F = Toggle Orbit nearest player
+    Left Shift + Click = Click TP
+]]
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Mouse = player:GetMouse()
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local Events = ReplicatedStorage:WaitForChild("Events")
-local CheckpointEvent = Events:WaitForChild("CheckpointReached")
+-- SETTINGS
+local currentSpeed = 40
+local orbitEnabled = false
+local orbitRadius = 10
+local orbitSpeed = math.rad(180) -- radians/sec
+local orbitAngle = 0
+local orbitOldPosition = nil
 
--- === Clean up old GUI if present (prevents duplicates on re-execute) ===
-local EXISTING_NAME = "StageTPGui"
-local old = playerGui:FindFirstChild(EXISTING_NAME)
-if old then
-	old:Destroy()
+-- DELETE ALL LAVA PARTS
+for _, part in pairs(workspace:GetDescendants()) do
+	if part:IsA("BasePart") and part.Name:lower() == "lava" then
+		part:Destroy()
+	end
 end
 
--- === Create ScreenGui (persistent across respawn) ===
+-- CREATE PART ABOVE LAVA AREA (if needed)
+local lava = workspace:FindFirstChild("Arenas")
+and workspace.Arenas:FindFirstChild("Arena1")
+and workspace.Arenas.Arena1:FindFirstChild("Map")
+and workspace.Arenas.Arena1.Map:FindFirstChild("Lava")
+
+if lava then
+	local part = Instance.new("Part")
+	part.Size = Vector3.new(10,1,10)
+	part.Anchored = true
+	part.CanCollide = false -- passable
+	part.Material = Enum.Material.Neon
+	part.Color = Color3.fromRGB(255,0,0)
+	part.Position = lava.Position + Vector3.new(0,5,0)
+	part.Parent = workspace
+end
+
+-- GUI SETUP
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = EXISTING_NAME
-screenGui.ResetOnSpawn = false -- persist through death
-screenGui.Parent = playerGui
+screenGui.Name = "PlayerControlGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- === Utility - create rounded frame/button helper ===
-local function round(obj, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 8)
-	c.Parent = obj
-end
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 350)
+frame.Position = UDim2.new(0.05, 0, 0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BackgroundTransparency = 0.1
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+frame.Active = true
+frame.Draggable = true
 
-local function createButton(text, parent)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 40)
-	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	btn.TextColor3 = Color3.fromRGB(255,255,255)
-	btn.Font = Enum.Font.GothamSemibold
-	btn.TextSize = 16
-	btn.AutoButtonColor = true
-	btn.Text = text
-	btn.Parent = parent
-	round(btn, 6)
-	-- Make touch friendly (bigger hitbox on mobile)
-	btn.SelectionImageObject = nil
-	return btn
-end
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.Position = UDim2.new(0,0,0,0)
+title.BackgroundTransparency = 1
+title.Text = "Player Controls, look in console for more info"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = frame
 
--- === Main container (center, responsive) ===
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 340, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -170, 0.5, -130)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-MainFrame.Active = true -- needed for touch InputChanged
-MainFrame.Parent = screenGui
-round(MainFrame, 12)
+-- MODE LABEL
+local modeLabel = Instance.new("TextLabel")
+modeLabel.Size = UDim2.new(0.9,0,0,30)
+modeLabel.Position = UDim2.new(0.05,0,0.05,0)
+modeLabel.BackgroundTransparency = 1
+modeLabel.Text = "Mode: None"
+modeLabel.TextColor3 = Color3.fromRGB(200,200,255)
+modeLabel.Font = Enum.Font.Gotham
+modeLabel.TextScaled = true
+modeLabel.Parent = frame
 
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, 0, 0, 44)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundColor3 = Color3.fromRGB(38,38,38)
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-Title.Text = "Stage Teleporter"
-Title.Parent = MainFrame
-round(Title, 8)
+-- SPEED TEXTBOX
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0.9,0,0,30)
+speedBox.Position = UDim2.new(0.05,0,0.15,0)
+speedBox.PlaceholderText = "Speed (0.3+)"
+speedBox.Text = tostring(currentSpeed)
+speedBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+speedBox.TextColor3 = Color3.fromRGB(255,255,255)
+speedBox.Font = Enum.Font.Gotham
+speedBox.TextScaled = true
+speedBox.ClearTextOnFocus = false
+speedBox.Parent = frame
 
-local Content = Instance.new("Frame")
-Content.Name = "Content"
-Content.Size = UDim2.new(1, -12, 1, -54)
-Content.Position = UDim2.new(0, 6, 0, 50)
-Content.BackgroundTransparency = 1
-Content.Parent = MainFrame
+-- ORBIT RADIUS SLIDER
+local radiusLabel = Instance.new("TextLabel")
+radiusLabel.Size = UDim2.new(0.9,0,0,25)
+radiusLabel.Position = UDim2.new(0.05,0,0.35,0)
+radiusLabel.BackgroundTransparency = 1
+radiusLabel.Text = "Orbit Radius: "..orbitRadius
+radiusLabel.TextColor3 = Color3.fromRGB(255,255,255)
+radiusLabel.Font = Enum.Font.Gotham
+radiusLabel.TextScaled = true
+radiusLabel.Parent = frame
 
-local UIList = Instance.new("UIListLayout", Content)
-UIList.Padding = UDim.new(0, 6)
-UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIList.VerticalAlignment = Enum.VerticalAlignment.Top
+local radiusSlider = Instance.new("TextBox")
+radiusSlider.Size = UDim2.new(0.9,0,0,30)
+radiusSlider.Position = UDim2.new(0.05,0,0.41,0)
+radiusSlider.PlaceholderText = "Enter radius"
+radiusSlider.Text = tostring(orbitRadius)
+radiusSlider.BackgroundColor3 = Color3.fromRGB(50,50,50)
+radiusSlider.TextColor3 = Color3.fromRGB(255,255,255)
+radiusSlider.Font = Enum.Font.Gotham
+radiusSlider.TextScaled = true
+radiusSlider.ClearTextOnFocus = false
+radiusSlider.Parent = frame
 
--- === Dragging (mouse + touch) ===
--- === Hard Dragging (mouse + touch) ===
-do
-	local dragging = false
-	local dragStartPos, guiStartPos
+-- ORBIT SPEED SLIDER
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0.9,0,0,25)
+speedLabel.Position = UDim2.new(0.05,0,0.51,0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Orbit Speed: "..math.deg(orbitSpeed).." deg/sec"
+speedLabel.TextColor3 = Color3.fromRGB(255,255,255)
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextScaled = true
+speedLabel.Parent = frame
 
-	local function beginDrag(input)
-		dragging = true
-		dragStartPos = input.Position
-		guiStartPos = MainFrame.Position
-	end
+local speedSlider = Instance.new("TextBox")
+speedSlider.Size = UDim2.new(0.9,0,0,30)
+speedSlider.Position = UDim2.new(0.05,0,0.57,0)
+speedSlider.PlaceholderText = "Enter speed in deg/sec"
+speedSlider.Text = tostring(math.deg(orbitSpeed))
+speedSlider.BackgroundColor3 = Color3.fromRGB(50,50,50)
+speedSlider.TextColor3 = Color3.fromRGB(255,255,255)
+speedSlider.Font = Enum.Font.Gotham
+speedSlider.TextScaled = true
+speedSlider.ClearTextOnFocus = false
+speedSlider.Parent = frame
 
-	local function updateDrag(input)
-		if not dragging then return end
-		local delta = input.Position - dragStartPos
-		MainFrame.Position = UDim2.new(
-			guiStartPos.X.Scale,
-			guiStartPos.X.Offset + delta.X,
-			guiStartPos.Y.Scale,
-			guiStartPos.Y.Offset + delta.Y
-		)
-	end
+-- MODE PRINT
+print([[Keybinds:
+E = Teleport to nearest player
+F = Toggle Orbit nearest player
+Left Shift + Click = Click TP
+]])
 
-	local function endDrag()
-		dragging = false
-	end
-
-	-- Mouse drag
-	Title.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			beginDrag(input)
-		end
-	end)
-	Title.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			updateDrag(input)
-		end
-	end)
-	Title.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			endDrag()
-		end
-	end)
-
-	-- Mobile drag anywhere on the frame
-	MainFrame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			beginDrag(input)
-		end
-	end)
-	MainFrame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			updateDrag(input)
-		end
-	end)
-	MainFrame.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			endDrag()
-		end
-	end)
-end
-
--- === Safe teleport wrapper (wait for character & fire remote after teleport) ===
-local function safeTeleportTo(part, checkpointId)
-	if not part or not part:IsA("BasePart") then return false end
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
-	if not hrp then return false end
-
-	-- Move first, then wait and fire event
-	hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-	-- small pause to avoid weird immediate reverts from server scripts
-	task.wait(0.14)
-	pcall(function()
-		firesignal(CheckpointEvent.OnClientEvent, checkpointId)
-	end)
-	return true
-end
-
--- === Helpers to show pages ===
-local function clearContent()
-	for _, c in ipairs(Content:GetChildren()) do
-		if c ~= UIList then
-			c:Destroy()
-		end
-	end
-end
-
-local function makeBackButton()
-	local back = createButton("← Back", Content)
-	back.Size = UDim2.new(0.8, 0, 0, 36)
-	back.MouseButton1Click:Connect(function()
-		clearContent()
-		mainMenu()
-	end)
-	-- touch support (InputBegan with touch)
-	back.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			back:CaptureFocus()
-			back.MouseButton1Click:Fire()
-		end
-	end)
-	return back
-end
-
--- === Pages ===
-function showMainCourse()
-	clearContent()
-	local label = Instance.new("TextLabel", Content)
-	label.Size = UDim2.new(0.9, 0, 0, 20)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.fromRGB(220,220,220)
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
-	label.Text = "Enter Main Course stage (1 - 381):"
-
-	local input = Instance.new("TextBox", Content)
-	input.Size = UDim2.new(0.9, 0, 0, 40)
-	input.PlaceholderText = "e.g. 57"
-	input.BackgroundColor3 = Color3.fromRGB(45,45,45)
-	input.TextColor3 = Color3.fromRGB(255,255,255)
-	input.Font = Enum.Font.Gotham
-	input.TextSize = 16
-	round(input, 6)
-
-	local go = createButton("Teleport", Content)
-	go.MouseButton1Click:Connect(function()
-		local n = tonumber(input.Text)
-		if not n or n < 1 or n > 381 then
-			go.Text = "Invalid"
-			task.wait(0.9)
-			go.Text = "Teleport"
-			return
-		end
-		local ok, part = pcall(function()
-			return workspace:FindFirstChild("Checkpoints") and workspace.Checkpoints:FindFirstChild(tostring(n)) and workspace.Checkpoints[tostring(n)]:FindFirstChild("Part") and workspace.Checkpoints[tostring(n)].Part
-		end)
-		if part then
-			safeTeleportTo(part, n)
-		else
-			go.Text = "Not found"
-			task.wait(0.9)
-			go.Text = "Teleport"
-		end
-	end)
-	-- touch fallback
-	go.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			go:CaptureFocus()
-			go.MouseButton1Click:Fire()
-		end
-	end)
-
-	makeBackButton()
-end
-
-function showMonthly()
-	clearContent()
-	local label = Instance.new("TextLabel", Content)
-	label.Size = UDim2.new(0.9, 0, 0, 20)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.fromRGB(220,220,220)
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
-	label.Text = "Enter Monthly stage (1 - 31):"
-
-	local input = Instance.new("TextBox", Content)
-	input.Size = UDim2.new(0.9, 0, 0, 40)
-	input.PlaceholderText = "e.g. 5"
-	input.BackgroundColor3 = Color3.fromRGB(45,45,45)
-	input.TextColor3 = Color3.fromRGB(255,255,255)
-	input.Font = Enum.Font.Gotham
-	input.TextSize = 16
-	round(input, 6)
-
-	local go = createButton("Teleport", Content)
-	go.MouseButton1Click:Connect(function()
-		local n = tonumber(input.Text)
-		if not n or n < 1 or n > 31 then
-			go.Text = "Invalid"
-			task.wait(0.9)
-			go.Text = "Teleport"
-			return
-		end
-		local part = workspace:FindFirstChild("CheckpointsMonthly") and workspace.CheckpointsMonthly:FindFirstChild(tostring(n)) and workspace.CheckpointsMonthly[tostring(n)]:FindFirstChild("PrimaryP") and workspace.CheckpointsMonthly[tostring(n)].PrimaryP
-		if part then
-			safeTeleportTo(part, n)
-		else
-			go.Text = "Not found"
-			task.wait(0.9)
-			go.Text = "Teleport"
-		end
-	end)
-	go.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			go:CaptureFocus()
-			go.MouseButton1Click:Fire()
-		end
-	end)
-
-	makeBackButton()
-end
-
-function showPro()
-	clearContent()
-	local label = Instance.new("TextLabel", Content)
-	label.Size = UDim2.new(0.9, 0, 0, 20)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.fromRGB(220,220,220)
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 14
-	label.Text = "Enter Pro stage (1 - 31):"
-
-	local input = Instance.new("TextBox", Content)
-	input.Size = UDim2.new(0.9, 0, 0, 40)
-	input.PlaceholderText = "e.g. 12"
-	input.BackgroundColor3 = Color3.fromRGB(45,45,45)
-	input.TextColor3 = Color3.fromRGB(255,255,255)
-	input.Font = Enum.Font.Gotham
-	input.TextSize = 16
-	round(input, 6)
-
-	local go = createButton("Teleport", Content)
-	go.MouseButton1Click:Connect(function()
-		local n = tonumber(input.Text)
-		if not n or n < 1 or n > 31 then
-			go.Text = "Invalid"
-			task.wait(0.9)
-			go.Text = "Teleport"
-			return
-		end
-		local part = workspace:FindFirstChild("CheckpointsPro") and workspace.CheckpointsPro:FindFirstChild(tostring(n)) and workspace.CheckpointsPro[tostring(n)]:FindFirstChild("PrimaryP") and workspace.CheckpointsPro[tostring(n)].PrimaryP
-		if part then
-			safeTeleportTo(part, n)
-		else
-			go.Text = "Not found"
-			task.wait(0.9)
-			go.Text = "Teleport"
-		end
-	end)
-	go.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			go:CaptureFocus()
-			go.MouseButton1Click:Fire()
-		end
-	end)
-
-	makeBackButton()
-end
-
-function showExperimental()
-	clearContent()
-
-	-- explicit safe lookup for experimental stage parts
-	local function getExpPart(index)
-		local ok, result = pcall(function()
-			local node = workspace:FindFirstChild("Experimental") and workspace.Experimental:FindFirstChild("Stage") and workspace.Experimental.Stage:FindFirstChild("Experimental12")
-			if not node then return nil end
-			local cp = node:FindFirstChild("Checkpoints") and node.Checkpoints:FindFirstChild(tostring(index))
-			if cp then
-				return cp:FindFirstChild("Part")
+-- FUNCTIONS
+local function getNearestPlayer()
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+	local root = char.HumanoidRootPart
+	local nearest, nearestDist = nil, math.huge
+	for _, plr in pairs(game.Players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local dist = (root.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+			if dist < nearestDist then
+				nearestDist = dist
+				nearest = plr
 			end
-			return nil
-		end)
-		return result
+		end
 	end
+	return nearest
+end
 
-	for i = 1, 3 do
-		local btn = createButton("Complete Stage " .. i, Content)
-		btn.MouseButton1Click:Connect(function()
-			local part = getExpPart(i)
-			if part then
-				safeTeleportTo(part, i)
+local function teleportNearest()
+	local nearest = getNearestPlayer()
+	local char = player.Character
+	if nearest and char and char:FindFirstChild("HumanoidRootPart") then
+		char.HumanoidRootPart.CFrame = CFrame.new(nearest.Character.HumanoidRootPart.Position + Vector3.new(0,2,0))
+	end
+end
+
+
+-- CLICK TP
+Mouse.Button1Down:Connect(function()
+	if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			local mousePos = Mouse.Hit.Position
+			char.HumanoidRootPart.CFrame = CFrame.new(mousePos + Vector3.new(0,2,0))
+		end
+	end
+end)
+
+-- INPUT HANDLING
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed then
+		if input.KeyCode == Enum.KeyCode.E then
+			teleportNearest()
+		elseif input.KeyCode == Enum.KeyCode.F then
+			local char = player.Character
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				if not orbitEnabled then
+					orbitOldPosition = char.HumanoidRootPart.Position
+					orbitEnabled = true
+					-- ENABLE NOCLIP
+					for _, part in pairs(char:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				else
+					orbitEnabled = false
+					-- DISABLE NOCLIP
+					local root = char:FindFirstChild("HumanoidRootPart")
+					for _, part in pairs(char:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = true
+						end
+					end
+					if orbitOldPosition and root then
+						root.CFrame = CFrame.new(orbitOldPosition + Vector3.new(0,2,0))
+						orbitOldPosition = nil
+					end
+				end
+			end
+		end
+	end
+end)
+
+-- UPDATE SPEED & ORBIT SETTINGS
+speedBox.FocusLost:Connect(function()
+	local val = tonumber(speedBox.Text)
+	if val and val >= 0.3 then
+		currentSpeed = val
+		speedBox.Text = tostring(currentSpeed)
+	else
+		speedBox.Text = tostring(currentSpeed)
+	end
+end)
+
+radiusSlider.FocusLost:Connect(function()
+	local val = tonumber(radiusSlider.Text)
+	if val and val > 0 then
+		orbitRadius = val
+		radiusLabel.Text = "Orbit Radius: "..orbitRadius
+	else
+		radiusSlider.Text = tostring(orbitRadius)
+	end
+end)
+
+speedSlider.FocusLost:Connect(function()
+	local val = tonumber(speedSlider.Text)
+	if val and val > 0 then
+		orbitSpeed = math.rad(val)
+		speedLabel.Text = "Orbit Speed: "..val.." deg/sec"
+	else
+		speedSlider.Text = tostring(math.deg(orbitSpeed))
+	end
+end)
+
+-- SMOOTH ORBIT + SPEED + PASS THROUGH + NOCLIP
+local function startSpeed(character)
+	local humanoid = character:WaitForChild("Humanoid")
+	local root = character:WaitForChild("HumanoidRootPart")
+
+	RunService.Heartbeat:Connect(function(dt)
+		if humanoid and humanoid.Health > 0 then
+			-- Walking speed
+			if humanoid.MoveDirection.Magnitude > 0 then
+				root.CFrame = root.CFrame + humanoid.MoveDirection.Unit * currentSpeed * dt
+			end
+
+			-- Smooth orbit
+			if orbitEnabled then
+				local nearest = getNearestPlayer()
+				if nearest and nearest.Character and nearest.Character:FindFirstChild("HumanoidRootPart") then
+					orbitAngle = orbitAngle + orbitSpeed * dt
+					local targetPos = nearest.Character.HumanoidRootPart.Position
+					local orbitX = orbitRadius * math.cos(orbitAngle)
+					local orbitZ = orbitRadius * math.sin(orbitAngle)
+					local desiredPos = Vector3.new(targetPos.X + orbitX, root.Position.Y, targetPos.Z + orbitZ)
+
+					-- Noclip / pass through
+					root.CanCollide = false
+					root.CFrame = CFrame.new(root.Position:Lerp(desiredPos, 0.2), targetPos)
+
+					modeLabel.Text = "Mode: Orbiting"
+				end
 			else
-				btn.Text = "Not found"
-				task.wait(0.9)
-				btn.Text = "Complete Stage " .. i
+				modeLabel.Text = "Mode: None"
 			end
-		end)
-		btn.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch then
-				btn:CaptureFocus()
-				btn.MouseButton1Click:Fire()
-			end
-		end)
-	end
-
-	makeBackButton()
-end
-
--- === Main menu builder ===
-function mainMenu()
-	clearContent()
-	local b1 = createButton("Main Course", Content)
-	local b2 = createButton("Monthly Challenge", Content)
-	local b3 = createButton("Pro Challenge", Content)
-	local b4 = createButton("Experimental", Content)
-
-	-- reduce text length on small screens
-	local function adaptForMobile()
-		if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
-			b1.Text = "Main"
-			b2.Text = "Monthly"
-			b3.Text = "Pro"
-			b4.Text = "Experimental"
 		end
-	end
-	adaptForMobile()
-
-	b1.MouseButton1Click:Connect(showMainCourse)
-	b2.MouseButton1Click:Connect(showMonthly)
-	b3.MouseButton1Click:Connect(showPro)
-	b4.MouseButton1Click:Connect(showExperimental)
-
-	-- also add touch fallback to the buttons (so they trigger reliably on mobile)
-	for _, btn in ipairs({b1,b2,b3,b4}) do
-		btn.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.Touch then
-				btn:CaptureFocus()
-				btn.MouseButton1Click:Fire()
-			end
-		end)
-	end
+	end)
 end
 
--- start
-mainMenu()
+-- RUN ON RESPAWN
+if player.Character then
+	startSpeed(player.Character)
+end
+player.CharacterAdded:Connect(startSpeed)
 
--- === Ensure GUI persists and isn't duplicated after death/respawn
--- ResetOnSpawn = false already preserves GUI. If LocalScript runs again it will destroy old GUI at top of script.
+-- CUSTOM HOOK AND RESET (local player only)
+local old; old = hookmetamethod(game, "__namecall", function(self, ...)
+    if self == game.ReplicatedStorage.Remotes.Replicator.RegisterDied and getnamecallmethod() == "FireServer" then
+        return;
+    end;
+    return old(self, ...)
+end)
+
+local reset = Instance.new("BindableEvent")
+reset.Event:Connect(function() game.Players.LocalPlayer.Character.Humanoid.Health = 0 end)
+game:GetService("StarterGui"):SetCore("ResetButtonCallback", reset)
+
+print("success - orbit noclip enabled")
