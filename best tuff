@@ -2,7 +2,7 @@
     Player Control GUI + Smooth Orbit + Click TP + Speed + Bomb + Noclip Orbit
     Keybinds:
     E = Teleport to nearest player
-    Q = Toggle Orbit nearest player
+    F = Toggle Orbit nearest player
     Left Shift + Click = Click TP
 ]]
 
@@ -305,4 +305,4 @@ local reset = Instance.new("BindableEvent")
 reset.Event:Connect(function() game.Players.LocalPlayer.Character.Humanoid.Health = 0 end)
 game:GetService("StarterGui"):SetCore("ResetButtonCallback", reset)
 
-print("success - orbit noclip enabled")
+print("success fr fr fr fr fr")
