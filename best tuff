@@ -2,7 +2,7 @@
     Player Control GUI + Smooth Orbit + Click TP + Speed + Bomb + Noclip Orbit
     Keybinds:
     E = Teleport to nearest player
-    F = Toggle Orbit nearest player
+    Q = Toggle Orbit nearest player
     Left Shift + Click = Click TP
 ]]
 
@@ -13,10 +13,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Mouse = player:GetMouse()
 
 -- SETTINGS
-local currentSpeed = 40
+local currentSpeed = 3
 local orbitEnabled = false
-local orbitRadius = 10
-local orbitSpeed = math.rad(180) -- radians/sec
+local orbitRadius = 1
+local orbitSpeed = math.rad(1800) -- radians/sec
 local orbitAngle = 0
 local orbitOldPosition = nil
 
@@ -190,7 +190,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if not processed then
 		if input.KeyCode == Enum.KeyCode.E then
 			teleportNearest()
-		elseif input.KeyCode == Enum.KeyCode.F then
+		elseif input.KeyCode == Enum.KeyCode.Q then
 			local char = player.Character
 			if char and char:FindFirstChild("HumanoidRootPart") then
 				if not orbitEnabled then
