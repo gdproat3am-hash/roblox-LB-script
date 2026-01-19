@@ -1,5 +1,5 @@
 -- LocalScript → StarterPlayerScripts
--- JToH Class Selector GUI - PC small / Mobile full-screen - Final 2026 version
+-- JToH Class Selector GUI - Classes 10/11/15/17 fully implemented - Omega only Ascension (Jan 2026)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -20,9 +20,13 @@ screenGui.Parent = playerGui
 
 local isMobile = UserInputService.TouchEnabled
 
--- ========================================================================
--- Screen-size aware scaling
--- ========================================================================
+-- Device toggle
+local function shouldShowGUI()
+    if not isMobile then return true end
+    return player:GetAttribute("ClassSelector_ShowOnMobile") == true
+end
+
+-- Scaling
 local function getGuiScale()
     local screenSize = GuiService:GetScreenResolution()
     local baseWidth = 480
@@ -30,31 +34,25 @@ local function getGuiScale()
     return scale
 end
 
--- ========================================================================
--- Draggable (touch + mouse)
--- ========================================================================
+-- Draggable
 local function makeDraggable(frame)
     local dragging = false
     local dragInput, dragStart, startPos
 
     frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or
-           input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
 
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
 
     frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or
-           input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
@@ -62,23 +60,14 @@ local function makeDraggable(frame)
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input == dragInput then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
-    UserInputService.TouchEnded:Connect(function()
-        dragging = false
-    end)
+    UserInputService.TouchEnded:Connect(function() dragging = false end)
 end
 
--- ========================================================================
--- Teleport helper
--- ========================================================================
+-- Teleport
 local function tryTeleport(target)
     local char = player.Character
     if not char then return end
@@ -94,18 +83,15 @@ local function tryTeleport(target)
         hrp.CFrame = part.CFrame * CFrame.new(0, 5, 0)
         print("Teleported → " .. part:GetFullName())
     else
-        warn("No valid BasePart found for teleport")
+        warn("No valid BasePart for teleport")
     end
 end
 
--- ========================================================================
--- Responsive scrolling popup (PC popups are smaller)
--- ========================================================================
+-- Popup creator
 local function createScrollingPopup(titleText, baseHeight, isMobileVersion)
     local scale = getGuiScale()
     local height = math.floor(baseHeight * scale)
-
-    local sizeMult = isMobileVersion and 1.0 or 0.70   -- 70% size on PC
+    local sizeMult = isMobileVersion and 1.0 or 0.70
     height = math.floor(height * sizeMult)
     height = math.min(height, GuiService:GetScreenResolution().Y * 0.88)
 
@@ -127,18 +113,16 @@ local function createScrollingPopup(titleText, baseHeight, isMobileVersion)
     title.TextColor3 = Color3.new(1,1,1)
     title.Font = Enum.Font.GothamBold
     title.TextSize = math.max(20, 24 * scale)
-    title.TextScaled = false
     title.Parent = popup
     Instance.new("UICorner", title).CornerRadius = UDim.new(0, 14)
 
     local scroll = Instance.new("ScrollingFrame")
-    scroll.Size = UDim2.new(1, -24 * scale, 1, - (80 * scale))
+    scroll.Size = UDim2.new(1, -24 * scale, 1, -80 * scale)
     scroll.Position = UDim2.new(0, 12 * scale, 0, 66 * scale)
     scroll.BackgroundTransparency = 1
     scroll.ScrollBarThickness = isMobileVersion and 14 or 8
     scroll.ScrollBarImageColor3 = Color3.fromRGB(100,100,140)
     scroll.ScrollingDirection = Enum.ScrollingDirection.Y
-    scroll.ScrollingEnabled = true
     scroll.Parent = popup
 
     local layout = Instance.new("UIListLayout")
@@ -170,30 +154,32 @@ local function createScrollingPopup(titleText, baseHeight, isMobileVersion)
     back.Parent = popup
     Instance.new("UICorner", back).CornerRadius = UDim.new(0, 12)
 
-    back.MouseButton1Click:Connect(function()
-        popup:Destroy()
-    end)
+    back.MouseButton1Click:Connect(function() popup:Destroy() end)
 
     return popup, scroll
 end
 
 -- ========================================================================
--- Class 10 Popup
+-- Class 10 Popup - using your earlier paths
 -- ========================================================================
 local function openClass10Popup()
-    local _, scroll = createScrollingPopup("Class 10 – Floor & Lighting TPs", 520, not isMobile)
+    local popup, scroll = createScrollingPopup("Class 10 – Floor & Lighting TPs", 520, not isMobile)
 
     local kit = workspace:FindFirstChild("JToH Kit v5.35")
     local lighting = kit and kit:FindFirstChild("ClientSidedObjects") and kit.ClientSidedObjects:FindFirstChild("LightingChangers")
     local area10 = workspace.Areas and workspace.Areas:FindFirstChild("Class10")
 
     local tps = {
-        {text = "TP to 'the light of day'",   target = function() return workspace:GetChildren()[90] and workspace:GetChildren()[90]:FindFirstChild("part") end},
-        {text = "TP to Floor 1",              target = function() return lighting and lighting:GetChildren()[9] end},
-        {text = "TP to Floor 2",              target = function() return lighting and lighting:GetChildren()[10] end},
-        {text = "TP to Floor 3",              target = function() return lighting and lighting:GetChildren()[11] end},
-        {text = "TP to Floor 4",              target = function() return lighting and lighting:GetChildren()[12] end},
-        {text = "TP to Floor 5 / The Roof",   target = function() return area10 and area10:GetChildren()[11] and area10:GetChildren()[11]:FindFirstChild("HealingPad") end},
+        {text = "TP to 'the light of day'", target = function()
+            return workspace:GetChildren()[90] and workspace:GetChildren()[90]:FindFirstChild("part")
+        end},
+        {text = "TP to Floor 1", target = function() return lighting and lighting:GetChildren()[9] end},
+        {text = "TP to Floor 2", target = function() return lighting and lighting:GetChildren()[10] end},
+        {text = "TP to Floor 3", target = function() return lighting and lighting:GetChildren()[11] end},
+        {text = "TP to Floor 4", target = function() return lighting and lighting:GetChildren()[12] end},
+        {text = "TP to Floor 5 / The Roof", target = function()
+            return area10 and area10:GetChildren()[11] and area10:GetChildren()[11]:FindFirstChild("HealingPad")
+        end},
     }
 
     for _, entry in ipairs(tps) do
@@ -209,20 +195,16 @@ local function openClass10Popup()
 
         btn.MouseButton1Click:Connect(function()
             local t = entry.target()
-            if t then 
-                tryTeleport(t) 
-            else 
-                warn("No target found: " .. entry.text) 
-            end
+            if t then tryTeleport(t) else warn("Class 10 - missing: " .. entry.text) end
         end)
     end
 end
 
 -- ========================================================================
--- Class 11 Popup
+-- Class 11 Popup - using your earlier paths
 -- ========================================================================
 local function openClass11Popup()
-    local _, scroll = createScrollingPopup("Class 11 – Checkpoints", 340, not isMobile)
+    local popup, scroll = createScrollingPopup("Class 11 – Checkpoints", 340, not isMobile)
 
     local canister = workspace:FindFirstChild("CanisterMode")
 
@@ -245,16 +227,16 @@ local function openClass11Popup()
 
         btn.MouseButton1Click:Connect(function()
             local t = entry.target()
-            if t then tryTeleport(t) else warn("No target: " .. entry.text) end
+            if t then tryTeleport(t) else warn("Class 11 - missing: " .. entry.text) end
         end)
     end
 end
 
 -- ========================================================================
--- Class 15 Popup
+-- Class 15 Popup - using your earlier paths
 -- ========================================================================
 local function openClass15Popup()
-    local _, scroll = createScrollingPopup("Class 15 – Special TPs", 420, not isMobile)
+    local popup, scroll = createScrollingPopup("Class 15 – Special TPs", 420, not isMobile)
 
     local kit = workspace:FindFirstChild("JToH Kit v5.35")
     local objs = kit and kit:FindFirstChild("ClientSidedObjects")
@@ -288,43 +270,60 @@ local function openClass15Popup()
                 local cm = workspace:FindFirstChild("CanisterMode")
                 target = cm and cm:FindFirstChild("Class15.1")
             end
+
             if target then
                 tryTeleport(target)
             else
-                warn("No target for: " .. act.text)
+                warn("Class 15 - missing: " .. act.text)
             end
         end)
     end
 end
 
 -- ========================================================================
--- Class 17 Popup (your provided code + safety)
+-- Class 17 Popup - using your exact paths/indices
 -- ========================================================================
 local function openClass17Popup()
     local popup, scroll = createScrollingPopup("Class 17 – Floor Teleports", 580, not isMobile)
 
+    local kit = workspace:FindFirstChild("JToH Kit v5.35")
     local areas = workspace:FindFirstChild("Areas")
     local class17 = areas and areas:FindFirstChild("Class17")
 
-    local floors = {
-        {text = "Very Start",           root = true, idx = 226},
-        {text = "Floor 1",              root = true, idx = 226},
-        {text = "Floor 2",              idx = 415},
-        {text = "Floor 3",              idx = 842},
-        {text = "Floor 4",              idx = 877},
-        {text = "Floor 5",              idx = 1283},
-        {text = "Floor 6",              idx = 1332},
-        {text = "Floor 7",              idx = 29,   part = true},
-        {text = "Floor 8",              idx = 30,   part = true},
-        {text = "Floor 9",              idx = 34,   part = true},
-        {text = "Floor 10",             idx = 35,   part = true},
+    if not class17 then
+        local err = Instance.new("TextLabel")
+        err.Size = UDim2.new(0.9,0,0,80)
+        err.BackgroundTransparency = 1
+        err.TextColor3 = Color3.fromRGB(255,80,80)
+        err.Text = "ERROR: Class17 folder not found"
+        err.TextScaled = true
+        err.Parent = scroll
+        return
+    end
+
+    local tps = {
+        {text = "Very Start", target = function()
+            local lc = kit and kit:FindFirstChild("ClientSidedObjects") and kit.ClientSidedObjects:FindFirstChild("LightingChangers")
+            return lc and lc:GetChildren()[33]
+        end},
+
+        {text = "Floor 1", target = function() return class17:GetChildren()[162] end},
+        {text = "Floor 2", target = function() return class17:GetChildren()[415] end},
+        {text = "Floor 3", target = function() return class17:GetChildren()[842] end},
+        {text = "Floor 4", target = function() return class17:GetChildren()[9] and class17:GetChildren()[9]:FindFirstChild("part") end},
+        {text = "Floor 5", target = function() return class17:GetChildren()[6] and class17:GetChildren()[6]:FindFirstChild("part") end},
+        {text = "Floor 6", target = function() return class17:GetChildren()[1332] end},
+        {text = "Floor 7", target = function() return class17:GetChildren()[29] and class17:GetChildren()[29]:FindFirstChild("part") end},
+        {text = "Floor 8", target = function() return class17:GetChildren()[30] and class17:GetChildren()[30]:FindFirstChild("part") end},
+        {text = "Floor 9", target = function() return class17:GetChildren()[34] and class17:GetChildren()[34]:FindFirstChild("part") end},
+        {text = "Floor 10", target = function() return class17:GetChildren()[35] and class17:GetChildren()[35]:FindFirstChild("part") end},
     }
 
-    for _, floor in ipairs(floors) do
+    for _, entry in ipairs(tps) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(0.92, 0, 0, 58)
         btn.BackgroundColor3 = Color3.fromRGB(90, 140, 200)
-        btn.Text = floor.text
+        btn.Text = entry.text
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamSemibold
         btn.TextScaled = true
@@ -332,88 +331,42 @@ local function openClass17Popup()
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
 
         btn.MouseButton1Click:Connect(function()
-            local target
-            if floor.root then
-                local ws = workspace:GetChildren()
-                if #ws >= floor.idx then
-                    local obj = ws[floor.idx]
-                    target = obj:FindFirstChild("part") or obj:FindFirstChildWhichIsA("BasePart") or obj
-                end
-            elseif class17 then
-                local kids = class17:GetChildren()
-                if #kids >= floor.idx then
-                    local obj = kids[floor.idx]
-                    target = obj
-                    if floor.part then
-                        target = obj:FindFirstChild("part") or obj:FindFirstChildWhichIsA("BasePart") or obj
-                    end
-                end
-            end
-
-            if target then
-                tryTeleport(target)
+            local t = entry.target()
+            if t then 
+                tryTeleport(t)
             else
-                warn("Failed to find target for: " .. floor.text)
+                warn("Class 17 - missing: " .. entry.text)
             end
         end)
     end
 end
 
 -- ========================================================================
--- Omega Rebirth Popup (fixed + removed start button)
+-- Omega tab - only Ascension remains
 -- ========================================================================
-local function openOmegaRebirthPopup()
-    local _, scroll = createScrollingPopup("Omega Rebirth", 320, not isMobile)
-
-    local function getClass11()
-        local areas = workspace:FindFirstChild("Areas")
-        return areas and (areas:FindFirstChild("Class11") or areas:FindFirstChild("class11"))
+local function showOmegaButtons()
+    for _, child in ipairs(scroll:GetChildren()) do
+        if child:IsA("GuiObject") then child:Destroy() end
     end
 
-    local function findOmegaButton()
-        local class11 = getClass11()
-        if not class11 then return nil end
-
-        for _, obj in ipairs(class11:GetChildren()) do
-            local n = obj.Name:lower()
-            if n:find("omega") or n:find("rebirth") or n:find("button") then
-                return obj:FindFirstChild("part") or obj:FindFirstChildWhichIsA("BasePart") or obj
-            end
-        end
-
-        -- Fallback: small height button-like part
-        for _, obj in ipairs(class11:GetChildren()) do
-            local p = obj:FindFirstChildWhichIsA("BasePart")
-            if p and p.Size.Y < 6 and p.Size.X > 8 then
-                return p
-            end
-        end
-        return nil
+    local areas = workspace:FindFirstChild("Areas")
+    if not areas then
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1,0,0,60)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = Color3.fromRGB(255,100,100)
+        lbl.Text = "Areas folder not found"
+        lbl.TextScaled = true
+        lbl.Parent = scroll
+        updateCanvas()
+        return
     end
 
-    local function findInfrontButton()
-        local class11 = getClass11()
-        if not class11 then return nil end
-
-        for _, obj in ipairs(class11:GetChildren()) do
-            local p = obj:FindFirstChildWhichIsA("BasePart")
-            if p and p.Size.Y < 3 and p.Size.X > 12 and p.Size.Z > 12 then
-                return p
-            end
-        end
-        return nil
-    end
-
-    local tps = {
-        {text = "TP to Omega Button",           target = findOmegaButton},
-        {text = "TP Infront of the Button",     target = findInfrontButton},
-    }
-
-    for _, entry in ipairs(tps) do
+    local function addButton(text, getTarget, color)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.92, 0, 0, 60)
-        btn.BackgroundColor3 = Color3.fromRGB(170, 100, 220)
-        btn.Text = entry.text
+        btn.Size = UDim2.new(1, -10 * scale, 0, isMobileVersion and 80 or 70)
+        btn.BackgroundColor3 = color or Color3.fromRGB(100, 140, 220)
+        btn.Text = text
         btn.TextColor3 = Color3.new(1,1,1)
         btn.Font = Enum.Font.GothamBold
         btn.TextScaled = true
@@ -421,85 +374,34 @@ local function openOmegaRebirthPopup()
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
 
         btn.MouseButton1Click:Connect(function()
-            local t = entry.target()
-            if t then
+            local t = getTarget()
+            if t then 
                 tryTeleport(t)
-            else
-                warn("Failed to locate: " .. entry.text)
+                print("Success: " .. text)
+            else 
+                warn("Failed: " .. text .. " - target = " .. tostring(t))
             end
         end)
     end
+
+    -- Only Omega Ascension
+    addButton("Omega Ascension - TP to omega button", function()
+        local c19 = areas:FindFirstChild("Class19")
+        local btn = c19 and c19:FindFirstChild("Omega Ascension Button")
+        return btn and btn:FindFirstChild("part")
+    end, Color3.fromRGB(100, 140, 220))
+
+    addButton("Omega Ascension - TP infront of the button", function()
+        local c19 = areas:FindFirstChild("Class19")
+        local stand = c19 and c19:FindFirstChild("Stand")
+        return stand and stand:GetChildren()[32]
+    end, Color3.fromRGB(100, 140, 220))
+
+    updateCanvas()
 end
 
--- ========================================================================
--- Version Selector (appears first)
--- ========================================================================
-local function createVersionSelector()
-    local selector = Instance.new("Frame")
-    selector.Size = UDim2.new(0, 320, 0, 200)
-    selector.Position = UDim2.new(0.5, -160, 0.5, -100)
-    selector.AnchorPoint = Vector2.new(0.5, 0.5)
-    selector.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    selector.BorderSizePixel = 0
-    selector.Parent = screenGui
-    Instance.new("UICorner", selector).CornerRadius = UDim.new(0, 16)
-    makeDraggable(selector)
-
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 60)
-    title.BackgroundTransparency = 1
-    title.Text = "Choose Interface Style"
-    title.TextColor3 = Color3.new(1,1,1)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 26
-    title.Parent = selector
-
-    local pcBtn = Instance.new("TextButton")
-    pcBtn.Size = UDim2.new(0.85, 0, 0, 60)
-    pcBtn.Position = UDim2.new(0.075, 0, 0.35, 0)
-    pcBtn.BackgroundColor3 = Color3.fromRGB(70, 140, 220)
-    pcBtn.Text = "PC - Compact"
-    pcBtn.TextColor3 = Color3.new(1,1,1)
-    pcBtn.Font = Enum.Font.GothamBold
-    pcBtn.TextSize = 20
-    pcBtn.Parent = selector
-    Instance.new("UICorner", pcBtn).CornerRadius = UDim.new(0, 12)
-
-    local mobileBtn = Instance.new("TextButton")
-    mobileBtn.Size = UDim2.new(0.85, 0, 0, 60)
-    mobileBtn.Position = UDim2.new(0.075, 0, 0.68, 0)
-    mobileBtn.BackgroundColor3 = Color3.fromRGB(90, 190, 120)
-    mobileBtn.Text = "Mobile - Full Screen"
-    mobileBtn.TextColor3 = Color3.new(1,1,1)
-    mobileBtn.Font = Enum.Font.GothamBold
-    mobileBtn.TextSize = 20
-    mobileBtn.Parent = selector
-    Instance.new("UICorner", mobileBtn).CornerRadius = UDim.new(0, 12)
-
-    local function loadPC()
-        selector:Destroy()
-        createMainGUI(0.38, 0.58, true)   -- small on PC
-    end
-
-    local function loadMobile()
-        selector:Destroy()
-        createMainGUI(0.96, 0.94, false)  -- large on mobile
-    end
-
-    pcBtn.MouseButton1Click:Connect(loadPC)
-    mobileBtn.MouseButton1Click:Connect(loadMobile)
-
-    -- Auto mobile if touch device
-    if isMobile then
-        task.wait(0.8)
-        loadMobile()
-    end
-end
-
--- ========================================================================
--- Main GUI Creator
--- ========================================================================
-function createMainGUI(widthScale, heightScale, isPC)
+-- Main GUI
+local function createMainGUI(widthScale, heightScale, isPC)
     local scale = getGuiScale()
     local isMobileVersion = not isPC
 
@@ -510,10 +412,36 @@ function createMainGUI(widthScale, heightScale, isPC)
     mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     mainFrame.BorderSizePixel = 0
+    mainFrame.Visible = true  -- force visible
     mainFrame.Parent = screenGui
     if isPC then makeDraggable(mainFrame) end
     Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
 
+    print("Main GUI frame created - visible:", mainFrame.Visible)
+
+    -- Device toggle button
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0, 160, 0, 38)
+    toggle.Position = UDim2.new(1, -10, 0, 10)
+    toggle.AnchorPoint = Vector2.new(1, 0)
+    toggle.BackgroundColor3 = shouldShowGUI() and Color3.fromRGB(80, 200, 100) or Color3.fromRGB(200, 80, 80)
+    toggle.Text = isMobile and ("Mobile GUI: " .. (shouldShowGUI() and "ON" or "OFF")) or "PC Mode"
+    toggle.TextColor3 = Color3.new(1,1,1)
+    toggle.Font = Enum.Font.GothamBold
+    toggle.TextSize = 14
+    toggle.Parent = mainFrame
+    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 19)
+
+    toggle.MouseButton1Click:Connect(function()
+        if not isMobile then return end
+        local cur = player:GetAttribute("ClassSelector_ShowOnMobile") == true
+        player:SetAttribute("ClassSelector_ShowOnMobile", not cur)
+        toggle.BackgroundColor3 = not cur and Color3.fromRGB(80, 200, 100) or Color3.fromRGB(200, 80, 80)
+        toggle.Text = "Mobile GUI: " .. (not cur and "ON" or "OFF")
+        mainFrame.Visible = not cur
+    end)
+
+    -- Tab bar
     local tabBar = Instance.new("Frame")
     tabBar.Size = UDim2.new(1, 0, 0, isMobileVersion and 70 or 50)
     tabBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
@@ -529,12 +457,12 @@ function createMainGUI(widthScale, heightScale, isPC)
 
     local function createTab(name, active)
         local tab = Instance.new("TextButton")
-        tab.Size = UDim2.new(0, math.min(140 * scale, 130), 0, 40 * scale)
+        tab.Size = UDim2.new(0, math.min(140 * scale, 120), 0, 38 * scale)
         tab.BackgroundColor3 = active and Color3.fromRGB(70, 70, 255) or Color3.fromRGB(55, 55, 55)
         tab.Text = name
         tab.TextColor3 = Color3.new(1,1,1)
         tab.Font = Enum.Font.GothamBold
-        tab.TextSize = math.max(15, 17 * scale)
+        tab.TextSize = math.max(14, 16 * scale)
         tab.TextScaled = true
         tab.Parent = tabBar
         Instance.new("UICorner", tab).CornerRadius = UDim.new(0, 10)
@@ -576,8 +504,9 @@ function createMainGUI(widthScale, heightScale, isPC)
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvas)
 
     local function showClasses()
+        print("Loading Classes tab")
         for _, child in ipairs(scroll:GetChildren()) do
-            if child:IsA("TextButton") then child:Destroy() end
+            if child:IsA("GuiObject") then child:Destroy() end
         end
 
         for i = 1, 18 do
@@ -592,54 +521,74 @@ function createMainGUI(widthScale, heightScale, isPC)
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
 
             btn.MouseButton1Click:Connect(function()
+                print("Clicked Class " .. i)
                 if i == 10 then openClass10Popup()
                 elseif i == 11 then openClass11Popup()
                 elseif i == 15 then openClass15Popup()
                 elseif i == 17 then openClass17Popup()
-                else print("Class " .. i .. " clicked") end
+                end
             end)
 
-            if not isMobile then
-                btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(80,80,100) end)
-                btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(55,55,70) end)
-            end
+            btn.MouseEnter:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(80,80,100) end)
+            btn.MouseLeave:Connect(function() btn.BackgroundColor3 = Color3.fromRGB(55,55,70) end)
         end
 
         updateCanvas()
     end
 
     local function showOmegaButtons()
+        print("Loading Omega tab")
         for _, child in ipairs(scroll:GetChildren()) do
-            if child:IsA("TextButton") then child:Destroy() end
+            if child:IsA("GuiObject") then child:Destroy() end
         end
 
-        local rebirth = Instance.new("TextButton")
-        rebirth.Size = UDim2.new(1, -10 * scale, 0, isMobileVersion and 80 or 70)
-        rebirth.BackgroundColor3 = Color3.fromRGB(140, 80, 220)
-        rebirth.Text = "Omega Rebirth"
-        rebirth.TextColor3 = Color3.new(1,1,1)
-        rebirth.TextScaled = true
-        rebirth.Font = Enum.Font.GothamBold
-        rebirth.Parent = scroll
-        Instance.new("UICorner", rebirth).CornerRadius = UDim.new(0, 10)
+        local areas = workspace:FindFirstChild("Areas")
+        if not areas then
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1,0,0,60)
+            lbl.BackgroundTransparency = 1
+            lbl.TextColor3 = Color3.fromRGB(255,100,100)
+            lbl.Text = "Areas not found"
+            lbl.TextScaled = true
+            lbl.Parent = scroll
+            updateCanvas()
+            return
+        end
 
-        rebirth.MouseButton1Click:Connect(openOmegaRebirthPopup)
+        local function addButton(text, getTarget, color)
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, -10 * scale, 0, isMobileVersion and 80 or 70)
+            btn.BackgroundColor3 = color or Color3.fromRGB(100, 140, 220)
+            btn.Text = text
+            btn.TextColor3 = Color3.new(1,1,1)
+            btn.Font = Enum.Font.GothamBold
+            btn.TextScaled = true
+            btn.Parent = scroll
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
 
-        for _, name in ipairs({"Omega Prestige", "Omega Ascension"}) do
-            local b = Instance.new("TextButton")
-            b.Size = UDim2.new(1, -10 * scale, 0, isMobileVersion and 80 or 70)
-            b.BackgroundColor3 = Color3.fromRGB(100, 160, 220)
-            b.Text = name
-            b.TextColor3 = Color3.new(1,1,1)
-            b.TextScaled = true
-            b.Font = Enum.Font.GothamBold
-            b.Parent = scroll
-            Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
-
-            b.MouseButton1Click:Connect(function()
-                print(name .. " selected")
+            btn.MouseButton1Click:Connect(function()
+                local t = getTarget()
+                if t then 
+                    tryTeleport(t)
+                    print("Success: " .. text)
+                else 
+                    warn("Failed: " .. text .. " - target = " .. tostring(t))
+                end
             end)
         end
+
+        -- Only Omega Ascension
+        addButton("Omega Ascension - TP to omega button", function()
+            local c19 = areas:FindFirstChild("Class19")
+            local btn = c19 and c19:FindFirstChild("Omega Ascension Button")
+            return btn and btn:FindFirstChild("part")
+        end, Color3.fromRGB(100, 140, 220))
+
+        addButton("Omega Ascension - TP infront of the button", function()
+            local c19 = areas:FindFirstChild("Class19")
+            local stand = c19 and c19:FindFirstChild("Stand")
+            return stand and stand:GetChildren()[32]
+        end, Color3.fromRGB(100, 140, 220))
 
         updateCanvas()
     end
@@ -647,6 +596,7 @@ function createMainGUI(widthScale, heightScale, isPC)
     local currentTab = "classes"
 
     local function switchTab(tabName)
+        print("Switching to tab: " .. tabName)
         if tabName == currentTab then return end
 
         classesTab.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
@@ -666,10 +616,70 @@ function createMainGUI(widthScale, heightScale, isPC)
     classesTab.MouseButton1Click:Connect(function() switchTab("classes") end)
     omegaTab.MouseButton1Click:Connect(function() switchTab("omega") end)
 
+    -- Force initial load
     showClasses()
+    print("Initial Classes tab loaded")
 end
 
--- Start with version selector
-createVersionSelector()
+-- Version selector + launch
+if shouldShowGUI() then
+    local selector = Instance.new("Frame")
+    selector.Size = UDim2.new(0, 300, 0, 180)
+    selector.Position = UDim2.new(0.5, -150, 0.5, -90)
+    selector.AnchorPoint = Vector2.new(0.5, 0.5)
+    selector.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    selector.BorderSizePixel = 0
+    selector.Parent = screenGui
+    Instance.new("UICorner", selector).CornerRadius = UDim.new(0, 16)
+    makeDraggable(selector)
 
-print("Class Selector GUI loaded – Choose PC or Mobile style")
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 60)
+    title.BackgroundTransparency = 1
+    title.Text = "Choose Version"
+    title.TextColor3 = Color3.new(1,1,1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 24
+    title.Parent = selector
+
+    local pcBtn = Instance.new("TextButton")
+    pcBtn.Size = UDim2.new(0.88, 0, 0, 55)
+    pcBtn.Position = UDim2.new(0.06, 0, 0, 75)
+    pcBtn.BackgroundColor3 = Color3.fromRGB(70, 140, 220)
+    pcBtn.Text = "PC (Small)"
+    pcBtn.TextColor3 = Color3.new(1,1,1)
+    pcBtn.Font = Enum.Font.GothamBold
+    pcBtn.TextSize = 18
+    pcBtn.Parent = selector
+    Instance.new("UICorner", pcBtn).CornerRadius = UDim.new(0, 12)
+
+    local mobileBtn = Instance.new("TextButton")
+    mobileBtn.Size = UDim2.new(0.88, 0, 0, 55)
+    mobileBtn.Position = UDim2.new(0.06, 0, 0, 140)
+    mobileBtn.BackgroundColor3 = Color3.fromRGB(90, 190, 120)
+    mobileBtn.Text = "Mobile (Full Screen)"
+    mobileBtn.TextColor3 = Color3.new(1,1,1)
+    mobileBtn.Font = Enum.Font.GothamBold
+    mobileBtn.TextSize = 18
+    mobileBtn.Parent = selector
+    Instance.new("UICorner", mobileBtn).CornerRadius = UDim.new(0, 12)
+
+    pcBtn.MouseButton1Click:Connect(function()
+        selector:Destroy()
+        createMainGUI(0.38, 0.58, true)
+    end)
+
+    mobileBtn.MouseButton1Click:Connect(function()
+        selector:Destroy()
+        createMainGUI(0.96, 0.94, false)
+    end)
+
+    if isMobile then
+        task.wait(0.8)
+        mobileBtn:Activate()
+    end
+else
+    print("GUI hidden on mobile device")
+end
+
+print("Class Selector loaded - check F9 console for debug messages")
