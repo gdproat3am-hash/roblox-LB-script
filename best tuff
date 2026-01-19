@@ -1344,6 +1344,64 @@ else
 end
 
 
---[[next prompt below]]--
+--[[class 12 prompt below]]--
 
--- now update by for class 12, make a button that says "TP to start" and here it is: workspace:GetChildren()[109].part. then add a seperate part in the tab which are "buttons" so make a button where you can tp to the blue crystal button, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[177]:GetChildren()[4].Button, then do a yellow one, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[183]:GetChildren()[4].Button, then go back to the tps, under the tp to start, add a tp to halfway point button which is workspace.Areas.Class12.Simon, then add a seperate obby part in the tab, then add a buttons which is "Teleport to pink crystal obby" which is workspace.Areas.Class12:GetChildren()[355]. then do one for blue crystal, which is workspace.Areas.Class12:GetChildren()[281], then do one more button which is the yellow crystal, which is workspace.Areas.Class12:GetChildren()[343]. then for each obby, add a auto completer, so for pink, do this one: workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[63]:GetChildren()[10], then for green, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[187]:GetChildren()[10], then for yellow, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[192]:GetChildren()[10], then just in the green one, add a button to remove this part or model, workspace["JToH Kit v5.35"].ClientSidedObjects.KillBricks:GetChildren()[11], then back to the tps, under the half way one, add a end tp which is workspace.Areas.Class12.Multiplier.part then make it so any model named "NPC" gets highlighted, make it a toggle, then add a button where you can remove any model named "NPC" in class 12]]--
+-- now update by for class 12, make a button that says "TP to start" and here it is: workspace:GetChildren()[109].part. then add a seperate part in the tab which are "buttons" so make a button where you can tp to the blue crystal button, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[177]:GetChildren()[4].Button, then do a yellow one, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[183]:GetChildren()[4].Button, then go back to the tps, under the tp to start, add a tp to halfway point button which is workspace.Areas.Class12.Simon, then add a seperate obby part in the tab, then add a buttons which is "Teleport to pink crystal obby" which is workspace.Areas.Class12:GetChildren()[355]. then do one for blue crystal, which is workspace.Areas.Class12:GetChildren()[281], then do one more button which is the yellow crystal, which is workspace.Areas.Class12:GetChildren()[343]. then for each obby, add a auto completer, so for pink, do this one: workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[63]:GetChildren()[10], then for green, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[187]:GetChildren()[10], then for yellow, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[192]:GetChildren()[10], then just in the green one, add a button to remove this part or model, workspace["JToH Kit v5.35"].ClientSidedObjects.KillBricks:GetChildren()[11], then back to the tps, under the half way one, add a end tp which is workspace.Areas.Class12.Multiplier.part then make it so any model named "NPC" gets highlighted, make it a toggle, then add a button where you can remove any model named "NPC" in class 12 in 1 click]]--
+
+
+--[[class 13 prompt below]]
+
+
+-- now for class 13, make a teleport to start part which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[18], then add a new button which is "tp to floor 1" which is workspace.Areas.Class13:GetChildren()[38].part. then do the rest.
+-- floor 2: workspace.Areas.Class13:GetChildren()[41].part
+-- floor 3: workspace.Areas.Class13:GetChildren()[35].part
+-- floor 4: workspace.Areas.Class13:GetChildren()[33].part
+-- floor 5: workspace.Areas.Class13:GetChildren()[42].part
+-- floor 6: workspace.Areas.Class13:GetChildren()[28].part
+-- floor 7: workspace.Areas.Class13:GetChildren()[31].part
+-- floor 8: workspace.Areas.Class13:GetChildren()[30].part
+-- floor 9: workspace.Areas.Class13:GetChildren()[40].part
+-- floor 10: workspace.Areas.Class13:GetChildren()[36].part
+-- floor 11: workspace.Areas.Class13:GetChildren()[43].part
+-- floor 12: workspace.Areas.Class13:GetChildren()[50].part
+-- floor 13: workspace.Areas.Class13:GetChildren()[44].part
+-- then add a end button which is workspace.Areas.Class13:GetChildren()[499]
+
+
+--[[class 14 prompt below]]
+
+-- now for class 14 add a button for tp to the start of it which is workspace.CanisterMode.Class14
+-- then add a end tp button which is workspace.Areas.Class14:GetChildren()[15].part
+
+--[[class 16 prompt below]]--
+
+-- now for class 16 add a button for tp at start which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[25], then add a button that says "TP to first obby" which is workspace.Areas.Class16:GetChildren()[202], then add a button that removes any model named "NPC2" then add another button that says "tp to obby part 2" which is workspace.Areas.Class16:GetChildren()[25].part, then add another part that says "tp to finale obby" which is workspace.Areas.Class16:GetChildren()[17].part, then add 1 more button that says "tp to end" which is workspace.Areas.Class16:GetChildren()[24].part
+
+--[[class 18 prompt below]]--
+
+-- now for class 18 add a button that says "tp to the very start" which is workspace.NoSpeedZones:GetChildren()[3]. then add a new button that says "tp to first obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.ButtonPlatforms:GetChildren()[215]. then add another button that says "finish part 1 obby/part 2 start" which is workspace.Areas.Class18:GetChildren()[13].part. then add another button which is "tp to part 2 obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.ButtonPlatforms:GetChildren()[217]. then add another button which is "complete part 2 obby/part 3 start" which is workspace.Areas.Class18:GetChildren()[28].part. then add another button that says "tp to part 4" which is workspace.Areas.Class18:GetChildren()[30].part. add another button that says "finish part 4" which is workspace.Areas.Class18:GetChildren()[47].part
+
+
+
+-- then add a new tab named "part 18 finale" and in it, make a button that says "TP to the start of the obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[57].
+-- then add another button that says "tp to the first tower" which is workspace.Areas.Class19.Box:GetChildren()[10]. make another button that says "tp to the second tower" which is workspace.Areas.Class19.Box:GetChildren()[10]. then make another button that says "tp to the thrid tower" which is workspace.Areas.Class19:GetChildren()[2]:GetChildren()[6]. then make another button that says "tp to the fourth tower" which is workspace.Areas.Class19:GetChildren()[3]:GetChildren()[6]. add another button that says "tp to the fifth tower" which is workspace.Areas.Class19:GetChildren()[4]:GetChildren()[4]. then add another buttons that says "tp to the sixth tower" which is workspace.Areas.Class19:GetChildren()[6]:GetChildren()[6]. then do 7th-15
+-- 7th: workspace.Areas.Class19:GetChildren()[5].Part
+-- 8th: workspace.Areas.Class19:GetChildren()[7]:GetChildren()[6]
+-- 9th: workspace.Areas.Class19:GetChildren()[8]:GetChildren()[20]
+-- 10th: workspace.Areas.Class19:GetChildren()[9].Part
+-- 11th: workspace.Areas.Class19:GetChildren()[10]:GetChildren()[10]
+-- 12th: workspace.Areas.Class19:GetChildren()[11]:GetChildren()[6]
+-- 13th: workspace.Areas.Class19:GetChildren()[12]:GetChildren()[3]
+-- 14th: workspace.Areas.Class19:GetChildren()[13]:GetChildren()[2]
+-- 15th: workspace.Areas.Class19:GetChildren()[14]:GetChildren()[7]
+-- then add a button that says "tp to the end" which is workspace.Areas.Class19:GetChildren()[14]:GetChildren()[3]
+-- then add a button that removes all parts named "Kill Brick"
+
+--[[class 19 prompt below]]--
+
+-- now make a tab named "class 19" and for it, make a button in it, so you can tp to the start which is workspace.Areas.Class18:GetChildren()[54].part. then add another button that removes any model or part named "Spinning Platform"
+
+
+--[[negative classes prompt below]]
+
+-- now for the negative classes, add a new tab name "negative classes" then add a button that says "tp to class -2" which is workspace.Areas["Class-1"]:GetChildren()[599]. then add another button saying "tp to class -3" which is workspace.Areas["Class-1"]:GetChildren()[636]. then add another button saying "tp to class -4" which is workspace.Areas["Class-1"]:GetChildren()[663]. then add another button saying "tp to class -5" which is workspace.Areas["Class-1"]:GetChildren()[193].part. add another button that says "tp to class -6" which is workspace.Areas["Class-1"]:GetChildren()[956]. add another button that says "teleport to class -7" which is workspace.Checkpoint1111. then add another button that says "tp to class -8" which is workspace.Checkpoint2222. then add another button thats says "tp to class -9 (diff game)" which tps you to game id: 15335128195. then add another button saying "tp to class -9.5/-10 (diff game)" which tps you to game id: 15335435479. then add one more button that says "tp to the badge area" which is workspace.Areas["Class-1"]:GetChildren()[991]
