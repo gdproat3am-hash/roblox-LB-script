@@ -1266,6 +1266,143 @@ local function addClass15TeleportsToTab(tab)
     end
 end
 
+-- Function to add Class 16 teleports & NPC 2 utilities to a tab
+local function addClass16TeleportsToTab(tab)
+    local group = tab:AddLeftGroupbox("Class 16 Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 16 for TPs to work")
+
+    local tps = {
+        {text = "Start", target = function()
+            local kit = workspace:FindFirstChild("JToH Kit v5.35")
+            local objs = kit and kit:FindFirstChild("ClientSidedObjects")
+            local lc = objs and objs:FindFirstChild("LightingChangers")
+            if lc then
+                local children = lc:GetChildren()
+                if #children >= 25 and children[25] then
+                    return children[25]
+                end
+            end
+        end},
+        
+        {text = "First Obby", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class16 = areas and areas:FindFirstChild("Class16")
+            if class16 then
+                local children = class16:GetChildren()
+                if #children >= 202 and children[202] then
+                    local part = children[202]
+                    return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end},
+        
+        {text = "Obby Part 2", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class16 = areas and areas:FindFirstChild("Class16")
+            if class16 then
+                local children = class16:GetChildren()
+                if #children >= 25 and children[25] then
+                    return children[25]:FindFirstChild("part")
+                end
+            end
+        end},
+        
+        {text = "Finale Obby", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class16 = areas and areas:FindFirstChild("Class16")
+            if class16 then
+                local children = class16:GetChildren()
+                if #children >= 17 and children[17] then
+                    return children[17]:FindFirstChild("part")
+                end
+            end
+        end},
+        
+        {text = "End", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class16 = areas and areas:FindFirstChild("Class16")
+            if class16 then
+                local children = class16:GetChildren()
+                if #children >= 24 and children[24] then
+                    return children[24]:FindFirstChild("part")
+                end
+            end
+        end},
+    }
+
+    for _, entry in ipairs(tps) do
+        group:AddButton("TP to " .. entry.text, function()
+            local t = entry.target()
+            if t and t:IsA("BasePart") then 
+                tryTeleport(t)
+            else
+                warn("Class 16 - missing or invalid: " .. entry.text)
+            end
+        end)
+    end
+
+    -- Highlight toggle for NPC 2 (enemies)
+    local npcHighlights = {}  -- store highlights for cleanup
+
+    group:AddToggle("HighlightEnemies", {
+        Text = "Highlight Enemies (NPC 2)",
+        Default = false,
+        Callback = function(value)
+            if value then
+                npcHighlights = {}
+                local count = 0
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj.Name == "NPC 2" then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "EnemyHighlight"
+                        highlight.FillColor = Color3.fromRGB(255, 85, 0)   -- orange-red fill
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 0) -- bright yellow outline
+                        highlight.FillTransparency = 0.35
+                        highlight.OutlineTransparency = 0
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        highlight.Parent = obj
+                        table.insert(npcHighlights, highlight)
+                        count = count + 1
+                    end
+                end
+                if count > 0 then
+                    print("Highlighted " .. count .. " NPC 2 enemy models")
+                else
+                    warn("No models named 'NPC 2' found to highlight")
+                end
+            else
+                local count = #npcHighlights
+                for _, hl in ipairs(npcHighlights) do
+                    if hl and hl.Parent then
+                        hl:Destroy()
+                    end
+                end
+                npcHighlights = {}
+                if count > 0 then
+                    print("Removed " .. count .. " NPC 2 highlights")
+                end
+            end
+        end
+    })
+
+    -- Remove all NPC 2 models button
+    group:AddButton("Remove NPC 2 Models", function()
+        local count = 0
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "NPC 2" then
+                obj:Destroy()
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            print("Removed " .. count .. " NPC 2 model(s)")
+        else
+            warn("No models named 'NPC 2' found to remove")
+        end
+    end)
+end
+
 -- Function to add Class 17 teleports to a tab
 local function addClass17TeleportsToTab(tab)
     local group = tab:AddLeftGroupbox("Class 17 Teleports")
@@ -1341,6 +1478,395 @@ local function addClass17TeleportsToTab(tab)
         end)
     end
 end
+
+-- Function to add Class 18 teleports to a tab
+local function addClass18TeleportsToTab(tab)
+    local group = tab:AddLeftGroupbox("Class 18 Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 18 for TPs to work")
+
+    local tps = {
+        {text = "the very start", target = function()
+            local noSpeed = workspace:FindFirstChild("NoSpeedZones")
+            if noSpeed then
+                local children = noSpeed:GetChildren()
+                if #children >= 3 and children[3] then
+                    local part = children[3]
+                    return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end},
+        
+        {text = "first obby", target = function()
+            local kit = workspace:FindFirstChild("JToH Kit v5.35")
+            local objs = kit and kit:FindFirstChild("ClientSidedObjects")
+            local bp = objs and objs:FindFirstChild("ButtonPlatforms")
+            if bp then
+                local children = bp:GetChildren()
+                if #children >= 215 and children[215] then
+                    local part = children[215]
+                    return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end},
+        
+        {text = "finish part 1 obby / part 2 start", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class18 = areas and areas:FindFirstChild("Class18")
+            if class18 then
+                local children = class18:GetChildren()
+                if #children >= 13 and children[13] then
+                    return children[13]:FindFirstChild("part")
+                end
+            end
+        end},
+        
+        {text = "part 2 obby", target = function()
+            local kit = workspace:FindFirstChild("JToH Kit v5.35")
+            local objs = kit and kit:FindFirstChild("ClientSidedObjects")
+            local bp = objs and objs:FindFirstChild("ButtonPlatforms")
+            if bp then
+                local children = bp:GetChildren()
+                if #children >= 217 and children[217] then
+                    local part = children[217]
+                    return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end},
+        
+        {text = "complete part 2 obby / part 3 start", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class18 = areas and areas:FindFirstChild("Class18")
+            if class18 then
+                local children = class18:GetChildren()
+                if #children >= 28 and children[28] then
+                    return children[28]:FindFirstChild("part")
+                end
+            end
+        end},
+        
+        {text = "part 4", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class18 = areas and areas:FindFirstChild("Class18")
+            if class18 then
+                local children = class18:GetChildren()
+                if #children >= 30 and children[30] then
+                    return children[30]:FindFirstChild("part")
+                end
+            end
+        end},
+        
+        {text = "finish part 4", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class18 = areas and areas:FindFirstChild("Class18")
+            if class18 then
+                local children = class18:GetChildren()
+                if #children >= 47 and children[47] then
+                    return children[47]:FindFirstChild("part")
+                end
+            end
+        end},
+    }
+
+    for _, entry in ipairs(tps) do
+        group:AddButton("TP to " .. entry.text, function()
+            local t = entry.target()
+            if t and t:IsA("BasePart") then 
+                tryTeleport(t)
+            else
+                warn("Class 18 - missing or invalid: " .. entry.text)
+            end
+        end)
+    end
+end
+
+-- Function to add the "Part 18 Finale" (Class 19) tab with all requested teleports & utility
+local function addPart18FinaleTab(Window)
+    local tab = Window:AddTab("Part 18 Finale", "star", "Class 19 / Finale Teleports")
+    
+    local group = tab:AddLeftGroupbox("Finale Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 19 / Finale for TPs to work")
+
+    local tps = {
+        {text = "the start of the obby", target = function()
+            local kit = workspace:FindFirstChild("JToH Kit v5.35")
+            local objs = kit and kit:FindFirstChild("ClientSidedObjects")
+            local lc = objs and objs:FindFirstChild("LightingChangers")
+            if lc then
+                local children = lc:GetChildren()
+                if #children >= 57 and children[57] then
+                    return children[57]
+                end
+            end
+        end},
+        
+        {text = "first tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local box = class19:FindFirstChild("Box")
+                if box then
+                    local children = box:GetChildren()
+                    if #children >= 10 and children[10] then
+                        local part = children[10]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "second tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local box = class19:FindFirstChild("Box")
+                if box then
+                    local children = box:GetChildren()
+                    if #children >= 10 and children[10] then
+                        local part = children[10]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "third tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 2 and children[2] then
+                    local sub = children[2]:GetChildren()
+                    if #sub >= 6 and sub[6] then
+                        local part = sub[6]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "fourth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 3 and children[3] then
+                    local sub = children[3]:GetChildren()
+                    if #sub >= 6 and sub[6] then
+                        local part = sub[6]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "fifth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 4 and children[4] then
+                    local sub = children[4]:GetChildren()
+                    if #sub >= 4 and sub[4] then
+                        local part = sub[4]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "sixth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 6 and children[6] then
+                    local sub = children[6]:GetChildren()
+                    if #sub >= 6 and sub[6] then
+                        local part = sub[6]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        -- Tower 7
+        {text = "seventh tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 5 and children[5] then
+                    local part = children[5]:FindFirstChild("Part")
+                    return part or (children[5]:IsA("BasePart") and children[5])
+                end
+            end
+        end},
+        
+        {text = "eighth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 7 and children[7] then
+                    local sub = children[7]:GetChildren()
+                    if #sub >= 6 and sub[6] then
+                        local part = sub[6]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "ninth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 8 and children[8] then
+                    local sub = children[8]:GetChildren()
+                    if #sub >= 20 and sub[20] then
+                        local part = sub[20]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "tenth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 9 and children[9] then
+                    local part = children[9]:FindFirstChild("Part")
+                    return part or (children[9]:IsA("BasePart") and children[9])
+                end
+            end
+        end},
+        
+        {text = "eleventh tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 10 and children[10] then
+                    local sub = children[10]:GetChildren()
+                    if #sub >= 10 and sub[10] then
+                        local part = sub[10]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "twelfth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 11 and children[11] then
+                    local sub = children[11]:GetChildren()
+                    if #sub >= 6 and sub[6] then
+                        local part = sub[6]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "thirteenth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 12 and children[12] then
+                    local sub = children[12]:GetChildren()
+                    if #sub >= 3 and sub[3] then
+                        local part = sub[3]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "fourteenth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 13 and children[13] then
+                    local sub = children[13]:GetChildren()
+                    if #sub >= 2 and sub[2] then
+                        local part = sub[2]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "fifteenth tower", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 14 and children[14] then
+                    local sub = children[14]:GetChildren()
+                    if #sub >= 7 and sub[7] then
+                        local part = sub[7]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+        
+        {text = "end", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class19 = areas and areas:FindFirstChild("Class19")
+            if class19 then
+                local children = class19:GetChildren()
+                if #children >= 14 and children[14] then
+                    local sub = children[14]:GetChildren()
+                    if #sub >= 3 and sub[3] then
+                        local part = sub[3]
+                        return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+                    end
+                end
+            end
+        end},
+    }
+
+    for _, entry in ipairs(tps) do
+        group:AddButton("TP to " .. entry.text, function()
+            local t = entry.target()
+            if t and t:IsA("BasePart") then 
+                tryTeleport(t)
+            else
+                warn("Part 18 Finale - missing or invalid: " .. entry.text)
+            end
+        end)
+    end
+
+    -- Remove all Kill Bricks
+    group:AddButton("Remove All Kill Bricks", function()
+        local count = 0
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Name == "Kill Brick" then
+                obj:Destroy()
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            print("Removed " .. count .. " Kill Brick(s)")
+        else
+            warn("No Kill Bricks found to remove")
+        end
+    end)
+end
+
+
+
 
 -- ========================================================================
 -- Class 10 Popup
@@ -1619,8 +2145,12 @@ if shouldShowGUI() then
             addClass14TeleportsToTab(classTab)
         elseif i == 15 then
             addClass15TeleportsToTab(classTab)
+        elseif i == 16 then
+             addClass16TeleportsToTab(classTab)
         elseif i == 17 then
             addClass17TeleportsToTab(classTab)
+        elseif i == 18 then
+            addClass18TeleportsToTab(classTab)
         else
             -- For classes 13-14, 16, 18 - use generic teleport finder
             addClassTeleportsToTab(classTab, i)
@@ -1810,6 +2340,12 @@ if shouldShowGUI() then
         end
         print("Removed " .. count .. " Moving Platform(s)")
     end)
+
+-- NEW: Part 18 Finale Tab
+    addPart18FinaleTab(Window)
+--[[the featues are far abovejust h]]
+
+addNegativeClassesTab(Window)
 
     print("V0id Hub loaded - check F9 console for debug messages")
 else
