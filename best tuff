@@ -1,6 +1,4 @@
--- LocalScript → StarterPlayerScripts
--- V0id Hub - JToH Class Selector GUI - Classes 10/11/15/17 fully implemented - Omega only Ascension (Jan 2026)
--- Using Obsidian GUI Library
+
 
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
@@ -762,6 +760,475 @@ local function addClass11TeleportsToTab(tab)
     end
 end
 
+-- Function to add Class 12 teleports to a tab
+local function addClass12TeleportsToTab(tab)
+    local group = tab:AddLeftGroupbox("Class 12 Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 12 for TPs to work")
+    
+    -- TP to Start
+    group:AddButton("TP to Start", function()
+        local targetPart = nil
+        local children = workspace:GetChildren()
+        if #children >= 109 and children[109] then
+            targetPart = children[109]:FindFirstChild("part")
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Start: Could not find workspace:GetChildren()[109].part")
+        end
+    end)
+    
+    -- TP to halfway point
+    group:AddButton("TP to halfway point", function()
+        local targetPart = nil
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            targetPart = class12:FindFirstChild("Simon")
+            if targetPart and not targetPart:IsA("BasePart") then
+                targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Halfway: Could not find workspace.Areas.Class12.Simon")
+        end
+    end)
+    
+    -- TP to End
+    group:AddButton("TP to End", function()
+        local targetPart = nil
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            local multiplier = class12:FindFirstChild("Multiplier")
+            if multiplier then
+                targetPart = multiplier:FindFirstChild("part")
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - End: Could not find workspace.Areas.Class12.Multiplier.part")
+        end
+    end)
+    
+    -- Crystal Buttons Group
+    local buttonGroup = tab:AddRightGroupbox("Crystal Buttons")
+    
+    buttonGroup:AddButton("TP to Blue Crystal Button", function()
+        local targetPart = nil
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local children = objs:GetChildren()
+                if #children >= 177 and children[177] then
+                    local subChildren = children[177]:GetChildren()
+                    if #subChildren >= 4 and subChildren[4] then
+                        targetPart = subChildren[4]:FindFirstChild("Button")
+                        if targetPart and not targetPart:IsA("BasePart") then
+                            targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                        end
+                    end
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Blue Button: Could not find workspace['JToH Kit v5.35'].ClientSidedObjects:GetChildren()[177]:GetChildren()[4].Button")
+        end
+    end)
+    
+    buttonGroup:AddButton("TP to Yellow Crystal Button", function()
+        local targetPart = nil
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local children = objs:GetChildren()
+                if #children >= 183 and children[183] then
+                    local subChildren = children[183]:GetChildren()
+                    if #subChildren >= 4 and subChildren[4] then
+                        targetPart = subChildren[4]:FindFirstChild("Button")
+                        if targetPart and not targetPart:IsA("BasePart") then
+                            targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                        end
+                    end
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Yellow Button: Could not find workspace['JToH Kit v5.35'].ClientSidedObjects:GetChildren()[183]:GetChildren()[4].Button")
+        end
+    end)
+    
+    -- Crystal Obbies Group
+    local obbyGroup = tab:AddLeftGroupbox("Crystal Obbies")
+    
+    obbyGroup:AddButton("Teleport to Pink Crystal Obby", function()
+        local targetPart = nil
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            local children = class12:GetChildren()
+            if #children >= 355 and children[355] then
+                targetPart = children[355]
+                if not targetPart:IsA("BasePart") then
+                    targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Pink Obby: Could not find workspace.Areas.Class12:GetChildren()[355]")
+        end
+    end)
+    
+    obbyGroup:AddButton("Auto Complete Pink Obby", function()
+        local targetPart = nil
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local children = objs:GetChildren()
+                if #children >= 63 and children[63] then
+                    local subChildren = children[63]:GetChildren()
+                    if #subChildren >= 10 and subChildren[10] then
+                        targetPart = subChildren[10]
+                        if not targetPart:IsA("BasePart") then
+                            targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                        end
+                    end
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+            print("Pink Obby Auto Completed!")
+        else
+            warn("Class 12 - Pink Auto Complete: Could not find workspace['JToH Kit v5.35'].ClientSidedObjects:GetChildren()[63]:GetChildren()[10]")
+        end
+    end)
+    
+    obbyGroup:AddButton("Teleport to Blue Crystal Obby", function()
+        local targetPart = nil
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            local children = class12:GetChildren()
+            if #children >= 281 and children[281] then
+                targetPart = children[281]
+                if not targetPart:IsA("BasePart") then
+                    targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Blue Obby: Could not find workspace.Areas.Class12:GetChildren()[281]")
+        end
+    end)
+    
+    obbyGroup:AddButton("Auto Complete Blue Obby", function()
+        local targetPart = nil
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local children = objs:GetChildren()
+                if #children >= 187 and children[187] then
+                    local subChildren = children[187]:GetChildren()
+                    if #subChildren >= 10 and subChildren[10] then
+                        targetPart = subChildren[10]
+                        if not targetPart:IsA("BasePart") then
+                            targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                        end
+                    end
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+            print("Blue Obby Auto Completed!")
+        else
+            warn("Class 12 - Blue Auto Complete: Could not find workspace['JToH Kit v5.35'].ClientSidedObjects:GetChildren()[187]:GetChildren()[10]")
+        end
+    end)
+    
+    obbyGroup:AddButton("Remove Blue Obby Kill Part", function()
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local killBricks = objs:FindFirstChild("KillBricks")
+                if killBricks then
+                    local children = killBricks:GetChildren()
+                    if #children >= 11 and children[11] then
+                        children[11]:Destroy()
+                        print("Removed Blue Obby Kill Part!")
+                    else
+                        warn("Class 12 - Remove Kill Part: Not enough children in KillBricks")
+                    end
+                else
+                    warn("Class 12 - Remove Kill Part: KillBricks not found")
+                end
+            end
+        else
+            warn("Class 12 - Remove Kill Part: JToH Kit not found")
+        end
+    end)
+    
+    obbyGroup:AddButton("Teleport to Yellow Crystal Obby", function()
+        local targetPart = nil
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            local children = class12:GetChildren()
+            if #children >= 343 and children[343] then
+                targetPart = children[343]
+                if not targetPart:IsA("BasePart") then
+                    targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+        else
+            warn("Class 12 - Yellow Obby: Could not find workspace.Areas.Class12:GetChildren()[343]")
+        end
+    end)
+    
+    obbyGroup:AddButton("Auto Complete Yellow Obby", function()
+        local targetPart = nil
+        local kit = workspace:FindFirstChild("JToH Kit v5.35")
+        if kit then
+            local objs = kit:FindFirstChild("ClientSidedObjects")
+            if objs then
+                local children = objs:GetChildren()
+                if #children >= 192 and children[192] then
+                    local subChildren = children[192]:GetChildren()
+                    if #subChildren >= 10 and subChildren[10] then
+                        targetPart = subChildren[10]
+                        if not targetPart:IsA("BasePart") then
+                            targetPart = targetPart:FindFirstChildWhichIsA("BasePart")
+                        end
+                    end
+                end
+            end
+        end
+
+        if targetPart and targetPart:IsA("BasePart") then
+            tryTeleport(targetPart)
+            print("Yellow Obby Auto Completed!")
+        else
+            warn("Class 12 - Yellow Auto Complete: Could not find workspace['JToH Kit v5.35'].ClientSidedObjects:GetChildren()[192]:GetChildren()[10]")
+        end
+    end)
+    
+    -- NPC Features Group
+    local npcGroup = tab:AddRightGroupbox("NPC Features")
+    
+    local npcHighlights = {}
+    
+    npcGroup:AddToggle("HighlightNPCs", {
+        Text = "Highlight NPCs",
+        Default = false,
+        Callback = function(value)
+            if value then
+                -- Add highlights to all NPCs
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj.Name == "NPC" then
+                        local highlight = Instance.new("Highlight")
+                        highlight.FillColor = Color3.fromRGB(255, 255, 0)
+                        highlight.OutlineColor = Color3.fromRGB(255, 200, 0)
+                        highlight.Parent = obj
+                        table.insert(npcHighlights, highlight)
+                    end
+                end
+                print("Highlighted " .. #npcHighlights .. " NPCs")
+            else
+                -- Remove all highlights
+                for _, highlight in ipairs(npcHighlights) do
+                    if highlight then
+                        highlight:Destroy()
+                    end
+                end
+                npcHighlights = {}
+                print("Removed NPC highlights")
+            end
+        end
+    })
+    
+    npcGroup:AddButton("Remove All NPCs in Class 12", function()
+        local count = 0
+        local areas = workspace:FindFirstChild("Areas")
+        local class12 = areas and areas:FindFirstChild("Class12")
+        if class12 then
+            for _, obj in ipairs(class12:GetDescendants()) do
+                if obj:IsA("Model") and obj.Name == "NPC" then
+                    obj:Destroy()
+                    count = count + 1
+                end
+            end
+            print("Removed " .. count .. " NPCs from Class 12")
+        else
+            warn("Class 12 folder not found")
+        end
+    end)
+end
+
+-- Function to add Class 13 teleports to a tab
+local function addClass13TeleportsToTab(tab)
+    local group = tab:AddLeftGroupbox("Class 13 Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 13 for TPs to work")
+
+    local tps = {
+        {text = "Floor 1", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[38] and class13:GetChildren()[38]:FindFirstChild("part")
+        end},
+        {text = "Floor 2", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[41] and class13:GetChildren()[41]:FindFirstChild("part")
+        end},
+        {text = "Floor 3", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[35] and class13:GetChildren()[35]:FindFirstChild("part")
+        end},
+        {text = "Floor 4", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[33] and class13:GetChildren()[33]:FindFirstChild("part")
+        end},
+        {text = "Floor 5", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[42] and class13:GetChildren()[42]:FindFirstChild("part")
+        end},
+        {text = "Floor 6", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[28] and class13:GetChildren()[28]:FindFirstChild("part")
+        end},
+        {text = "Floor 7", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[31] and class13:GetChildren()[31]:FindFirstChild("part")
+        end},
+        {text = "Floor 8", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[30] and class13:GetChildren()[30]:FindFirstChild("part")
+        end},
+        {text = "Floor 9", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[40] and class13:GetChildren()[40]:FindFirstChild("part")
+        end},
+        {text = "Floor 10", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[36] and class13:GetChildren()[36]:FindFirstChild("part")
+        end},
+        {text = "Floor 11", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[43] and class13:GetChildren()[43]:FindFirstChild("part")
+        end},
+        {text = "Floor 12", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[50] and class13:GetChildren()[50]:FindFirstChild("part")
+        end},
+        {text = "Floor 13", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            return class13 and class13:GetChildren()[44] and class13:GetChildren()[44]:FindFirstChild("part")
+        end},
+        {text = "End", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class13 = areas and areas:FindFirstChild("Class13")
+            local children = class13 and class13:GetChildren()
+            if children and #children >= 499 and children[499] then
+                local part = children[499]
+                return part:IsA("BasePart") and part or part:FindFirstChildWhichIsA("BasePart")
+            end
+        end},
+    }
+
+    for _, entry in ipairs(tps) do
+        group:AddButton("TP to " .. entry.text, function()
+            local t = entry.target()
+            if t and t:IsA("BasePart") then 
+                tryTeleport(t)
+            else
+                warn("Class 13 - missing or invalid: " .. entry.text)
+            end
+        end)
+    end
+end
+
+-- Function to add Class 14 teleports to a tab
+local function addClass14TeleportsToTab(tab)
+    local group = tab:AddLeftGroupbox("Class 14 Teleports")
+    
+    group:AddLabel("⚠️ You must be in Class 14 for TPs to work")
+
+    local tps = {
+        {text = "Start", target = function()
+            local canister = workspace:FindFirstChild("CanisterMode")
+            local class14 = canister and canister:FindFirstChild("Class14")
+            if class14 then
+                return class14:IsA("BasePart") and class14 or class14:FindFirstChildWhichIsA("BasePart")
+            end
+        end},
+        {text = "End", target = function()
+            local areas = workspace:FindFirstChild("Areas")
+            local class14 = areas and areas:FindFirstChild("Class14")
+            if class14 then
+                local children = class14:GetChildren()
+                if #children >= 15 and children[15] then
+                    return children[15]:FindFirstChild("part")
+                end
+            end
+        end},
+    }
+
+    for _, entry in ipairs(tps) do
+        group:AddButton("TP to " .. entry.text, function()
+            local t = entry.target()
+            if t and t:IsA("BasePart") then 
+                tryTeleport(t)
+            else
+                warn("Class 14 - missing or invalid: " .. entry.text)
+            end
+        end)
+    end
+end
+
 -- Function to add Class 15 teleports to a tab
 local function addClass15TeleportsToTab(tab)
     local kit = workspace:FindFirstChild("JToH Kit v5.35")
@@ -1144,12 +1611,18 @@ if shouldShowGUI() then
             addClass10TeleportsToTab(classTab)
         elseif i == 11 then
             addClass11TeleportsToTab(classTab)
+        elseif i == 12 then
+            addClass12TeleportsToTab(classTab)
+        elseif i == 13 then
+            addClass13TeleportsToTab(classTab)
+        elseif i == 14 then
+            addClass14TeleportsToTab(classTab)
         elseif i == 15 then
             addClass15TeleportsToTab(classTab)
         elseif i == 17 then
             addClass17TeleportsToTab(classTab)
         else
-            -- For classes 12-14, 16, 18 - use generic teleport finder
+            -- For classes 13-14, 16, 18 - use generic teleport finder
             addClassTeleportsToTab(classTab, i)
         end
     end
@@ -1342,66 +1815,3 @@ if shouldShowGUI() then
 else
     print("GUI hidden on mobile device")
 end
-
-
---[[class 12 prompt below]]--
-
--- now update by for class 12, make a button that says "TP to start" and here it is: workspace:GetChildren()[109].part. then add a seperate part in the tab which are "buttons" so make a button where you can tp to the blue crystal button, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[177]:GetChildren()[4].Button, then do a yellow one, which is workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[183]:GetChildren()[4].Button, then go back to the tps, under the tp to start, add a tp to halfway point button which is workspace.Areas.Class12.Simon, then add a seperate obby part in the tab, then add a buttons which is "Teleport to pink crystal obby" which is workspace.Areas.Class12:GetChildren()[355]. then do one for blue crystal, which is workspace.Areas.Class12:GetChildren()[281], then do one more button which is the yellow crystal, which is workspace.Areas.Class12:GetChildren()[343]. then for each obby, add a auto completer, so for pink, do this one: workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[63]:GetChildren()[10], then for green, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[187]:GetChildren()[10], then for yellow, do workspace["JToH Kit v5.35"].ClientSidedObjects:GetChildren()[192]:GetChildren()[10], then just in the green one, add a button to remove this part or model, workspace["JToH Kit v5.35"].ClientSidedObjects.KillBricks:GetChildren()[11], then back to the tps, under the half way one, add a end tp which is workspace.Areas.Class12.Multiplier.part then make it so any model named "NPC" gets highlighted, make it a toggle, then add a button where you can remove any model named "NPC" in class 12 in 1 click]]--
-
-
---[[class 13 prompt below]]
-
-
--- now for class 13, make a teleport to start part which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[18], then add a new button which is "tp to floor 1" which is workspace.Areas.Class13:GetChildren()[38].part. then do the rest.
--- floor 2: workspace.Areas.Class13:GetChildren()[41].part
--- floor 3: workspace.Areas.Class13:GetChildren()[35].part
--- floor 4: workspace.Areas.Class13:GetChildren()[33].part
--- floor 5: workspace.Areas.Class13:GetChildren()[42].part
--- floor 6: workspace.Areas.Class13:GetChildren()[28].part
--- floor 7: workspace.Areas.Class13:GetChildren()[31].part
--- floor 8: workspace.Areas.Class13:GetChildren()[30].part
--- floor 9: workspace.Areas.Class13:GetChildren()[40].part
--- floor 10: workspace.Areas.Class13:GetChildren()[36].part
--- floor 11: workspace.Areas.Class13:GetChildren()[43].part
--- floor 12: workspace.Areas.Class13:GetChildren()[50].part
--- floor 13: workspace.Areas.Class13:GetChildren()[44].part
--- then add a end button which is workspace.Areas.Class13:GetChildren()[499]
-
-
---[[class 14 prompt below]]
-
--- now for class 14 add a button for tp to the start of it which is workspace.CanisterMode.Class14
--- then add a end tp button which is workspace.Areas.Class14:GetChildren()[15].part
-
---[[class 16 prompt below]]--
-
--- now for class 16 add a button for tp at start which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[25], then add a button that says "TP to first obby" which is workspace.Areas.Class16:GetChildren()[202], then add a button that removes any model named "NPC2" then add another button that says "tp to obby part 2" which is workspace.Areas.Class16:GetChildren()[25].part, then add another part that says "tp to finale obby" which is workspace.Areas.Class16:GetChildren()[17].part, then add 1 more button that says "tp to end" which is workspace.Areas.Class16:GetChildren()[24].part
-
---[[class 18 prompt below]]--
-
--- now for class 18 add a button that says "tp to the very start" which is workspace.NoSpeedZones:GetChildren()[3]. then add a new button that says "tp to first obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.ButtonPlatforms:GetChildren()[215]. then add another button that says "finish part 1 obby/part 2 start" which is workspace.Areas.Class18:GetChildren()[13].part. then add another button which is "tp to part 2 obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.ButtonPlatforms:GetChildren()[217]. then add another button which is "complete part 2 obby/part 3 start" which is workspace.Areas.Class18:GetChildren()[28].part. then add another button that says "tp to part 4" which is workspace.Areas.Class18:GetChildren()[30].part. add another button that says "finish part 4" which is workspace.Areas.Class18:GetChildren()[47].part
-
-
-
--- then add a new tab named "part 18 finale" and in it, make a button that says "TP to the start of the obby" which is workspace["JToH Kit v5.35"].ClientSidedObjects.LightingChangers:GetChildren()[57].
--- then add another button that says "tp to the first tower" which is workspace.Areas.Class19.Box:GetChildren()[10]. make another button that says "tp to the second tower" which is workspace.Areas.Class19.Box:GetChildren()[10]. then make another button that says "tp to the thrid tower" which is workspace.Areas.Class19:GetChildren()[2]:GetChildren()[6]. then make another button that says "tp to the fourth tower" which is workspace.Areas.Class19:GetChildren()[3]:GetChildren()[6]. add another button that says "tp to the fifth tower" which is workspace.Areas.Class19:GetChildren()[4]:GetChildren()[4]. then add another buttons that says "tp to the sixth tower" which is workspace.Areas.Class19:GetChildren()[6]:GetChildren()[6]. then do 7th-15
--- 7th: workspace.Areas.Class19:GetChildren()[5].Part
--- 8th: workspace.Areas.Class19:GetChildren()[7]:GetChildren()[6]
--- 9th: workspace.Areas.Class19:GetChildren()[8]:GetChildren()[20]
--- 10th: workspace.Areas.Class19:GetChildren()[9].Part
--- 11th: workspace.Areas.Class19:GetChildren()[10]:GetChildren()[10]
--- 12th: workspace.Areas.Class19:GetChildren()[11]:GetChildren()[6]
--- 13th: workspace.Areas.Class19:GetChildren()[12]:GetChildren()[3]
--- 14th: workspace.Areas.Class19:GetChildren()[13]:GetChildren()[2]
--- 15th: workspace.Areas.Class19:GetChildren()[14]:GetChildren()[7]
--- then add a button that says "tp to the end" which is workspace.Areas.Class19:GetChildren()[14]:GetChildren()[3]
--- then add a button that removes all parts named "Kill Brick"
-
---[[class 19 prompt below]]--
-
--- now make a tab named "class 19" and for it, make a button in it, so you can tp to the start which is workspace.Areas.Class18:GetChildren()[54].part. then add another button that removes any model or part named "Spinning Platform"
-
-
---[[negative classes prompt below]]
-
--- now for the negative classes, add a new tab name "negative classes" then add a button that says "tp to class -2" which is workspace.Areas["Class-1"]:GetChildren()[599]. then add another button saying "tp to class -3" which is workspace.Areas["Class-1"]:GetChildren()[636]. then add another button saying "tp to class -4" which is workspace.Areas["Class-1"]:GetChildren()[663]. then add another button saying "tp to class -5" which is workspace.Areas["Class-1"]:GetChildren()[193].part. add another button that says "tp to class -6" which is workspace.Areas["Class-1"]:GetChildren()[956]. add another button that says "teleport to class -7" which is workspace.Checkpoint1111. then add another button that says "tp to class -8" which is workspace.Checkpoint2222. then add another button thats says "tp to class -9 (diff game)" which tps you to game id: 15335128195. then add another button saying "tp to class -9.5/-10 (diff game)" which tps you to game id: 15335435479. then add one more button that says "tp to the badge area" which is workspace.Areas["Class-1"]:GetChildren()[991]
